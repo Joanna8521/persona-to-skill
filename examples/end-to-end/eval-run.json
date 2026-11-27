@@ -1,0 +1,112 @@
+{
+  "items": [
+    {
+      "id": "q1",
+      "reconstruction": "Slow on the way out, slow on the way in. The regret runs one direction.",
+      "baseline": "Act decisively in both directions; hesitation costs more than a wrong call.",
+      "aligned": true,
+      "baseline_aligned": false,
+      "judged_by": "blind comparison pass. Illustrative: this subject, these sources and both answers were written for this example",
+      "blind": true
+    },
+    {
+      "id": "q2",
+      "reconstruction": "If nobody was already doing the work badly, the role is a feeling with a title on it.",
+      "baseline": "Hire ahead of the need so the team is ready when demand arrives.",
+      "aligned": true,
+      "baseline_aligned": false,
+      "judged_by": "blind comparison pass. Illustrative: this subject, these sources and both answers were written for this example",
+      "blind": true
+    },
+    {
+      "id": "q3",
+      "reconstruction": "Early bad news is worth a premium. Late good news is worth nothing.",
+      "baseline": "Choose the lowest landed cost and manage quality through the contract.",
+      "aligned": true,
+      "baseline_aligned": false,
+      "judged_by": "blind comparison pass. Illustrative: this subject, these sources and both answers were written for this example",
+      "blind": true
+    },
+    {
+      "id": "q4",
+      "reconstruction": "A supplier whose last contract went perfectly is a supplier who will not tell me when this one does not.",
+      "baseline": "A clean track record is the strongest signal a new supplier can offer.",
+      "aligned": true,
+      "baseline_aligned": false,
+      "judged_by": "blind comparison pass. Illustrative: this subject, these sources and both answers were written for this example",
+      "blind": true
+    },
+    {
+      "id": "q5",
+      "reconstruction": "No. It reads as confidence and it is the cheapest way to go broke slowly.",
+      "baseline": "Yes, hire now so capacity is in place before the demand lands.",
+      "aligned": true,
+      "baseline_aligned": false,
+      "judged_by": "blind comparison pass. Illustrative: this subject, these sources and both answers were written for this example",
+      "blind": true
+    },
+    {
+      "id": "q6",
+      "reconstruction": "Last quarter's numbers, in front of me, before the meeting is in the calendar.",
+      "baseline": "Come prepared: review the relevant recent financials beforehand.",
+      "aligned": true,
+      "baseline_aligned": true,
+      "judged_by": "blind comparison pass. Illustrative: this subject, these sources and both answers were written for this example",
+      "blind": true
+    },
+    {
+      "id": "q7",
+      "reconstruction": "Evidence the work already exists and is being done badly by someone.",
+      "baseline": "A clear role definition and a business case for the headcount.",
+      "aligned": true,
+      "baseline_aligned": true,
+      "judged_by": "blind comparison pass. Illustrative: this subject, these sources and both answers were written for this example",
+      "blind": true
+    },
+    {
+      "id": "q8",
+      "reconstruction": "One number, written down at the start, visible to other people, checked at six months.",
+      "baseline": "Set measurable objectives and review them at regular intervals.",
+      "aligned": true,
+      "baseline_aligned": true,
+      "judged_by": "blind comparison pass. Illustrative: this subject, these sources and both answers were written for this example",
+      "blind": true
+    },
+    {
+      "id": "q9",
+      "reconstruction": "no answer: the corpus gave this seat nothing, and the reconstruction says so rather than guessing",
+      "baseline": "What is blocking the deal, and what does the buyer need to move?",
+      "aligned": false,
+      "baseline_aligned": true,
+      "judged_by": "blind comparison pass. Illustrative: this subject, these sources and both answers were written for this example",
+      "blind": true
+    },
+    {
+      "id": "q10",
+      "reconstruction": "no answer: the corpus gave this seat nothing, and the reconstruction says so rather than guessing",
+      "baseline": "Review the plan end to end and check the assumptions behind each stage.",
+      "aligned": false,
+      "baseline_aligned": true,
+      "judged_by": "blind comparison pass. Illustrative: this subject, these sources and both answers were written for this example",
+      "blind": true
+    },
+    {
+      "id": "q11",
+      "reconstruction": "no answer: the corpus gave this seat nothing, and the reconstruction says so rather than guessing",
+      "baseline": "What are your references, capacity and quality certifications?",
+      "aligned": false,
+      "baseline_aligned": true,
+      "judged_by": "blind comparison pass. Illustrative: this subject, these sources and both answers were written for this example",
+      "blind": true
+    },
+    {
+      "id": "q12",
+      "reconstruction": "no answer: the corpus gave this seat nothing, and the reconstruction says so rather than guessing",
+      "baseline": "Agree commercial terms early, then assess the supplier in detail.",
+      "aligned": false,
+      "baseline_aligned": true,
+      "judged_by": "blind comparison pass. Illustrative: this subject, these sources and both answers were written for this example",
+      "blind": true
+    }
+  ]
+}

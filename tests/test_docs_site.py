@@ -12,14 +12,14 @@ reference page keeps describing the old value, the site builds cleanly, and
 the page is wrong in the one direction that matters: it still looks
 authoritative.
 """
+import importlib.util
 import re
-import shutil
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
 
-import _base  # noqa: F401
+import _base
 
 ROOT = Path(__file__).resolve().parent.parent
 DOCS = ROOT / "docs"
@@ -190,9 +190,6 @@ def test_published_comments_obey_the_prose_rules():
     )
 
 
-if __name__ == "__main__":
-    import sys as _sys
-    _sys.exit(_base.run_module(dict(globals())))
 
 
 def test_every_built_page_has_a_sitemap_beside_it():
@@ -207,10 +204,14 @@ def test_every_built_page_has_a_sitemap_beside_it():
     ROOTS. That silenced the home page and left every sub-page broken, and a
     test of the hook's intent would have passed.
     """
-    mkdocs = shutil.which("mkdocs")
-    if mkdocs is None:
-        import pytest  # noqa: PLC0415
-        pytest.skip("mkdocs is not installed")
+    # Asked of the interpreter that will run the build, not of PATH. The
+    # first version used shutil.which("mkdocs"), which answers a different
+    # question: in a virtualenv without mkdocs but with a system mkdocs still
+    # on PATH, which() says yes and `sys.executable -m mkdocs` then fails with
+    # "No module named mkdocs". A precondition has to test the thing the test
+    # actually does.
+    if importlib.util.find_spec("mkdocs") is None:
+        _base.skip("mkdocs is not importable by this interpreter")
 
     with tempfile.TemporaryDirectory() as tmp:
         built = Path(tmp) / "site"
@@ -226,3 +227,77 @@ def test_every_built_page_has_a_sitemap_beside_it():
         assert not missing, (
             f"{len(missing)} of {len(pages)} built pages have no sitemap "
             f"beside them, so Material will 404 on each page view: {missing}")
+
+
+# The spelling of the count in each README. The test below discovers every
+# README*.md in the repository root and fails when one has no entry here, so
+# this mapping cannot quietly fall behind the set of translations.
+SUBCOMMAND_COUNT_PATTERNS = {
+    "README.md": r"\b(One|Two|Three|Four|Five|Six|Seven|Eight|Nine|Ten) subcommands\b",
+    "README.zh-TW.md": r"([一二三四五六七八九十])個子指令",
+    "README.ja.md": r"サブコマンドは\s*(\d+)\s*つ",
+}
+
+_WORDS = {
+    "one": 1, "two": 2, "three": 3, "four": 4, "five": 5,
+    "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10,
+    "一": 1, "二": 2, "三": 3, "四": 4, "五": 5,
+    "六": 6, "七": 7, "八": 8, "九": 9, "十": 10,
+}
+
+
+def _parser_subcommand_count():
+    import argparse  # noqa: PLC0415
+
+    from persona_to_skill.cli import build_parser  # noqa: PLC0415
+
+    parser = build_parser()
+    subs = [a for a in parser._actions
+            if isinstance(a, argparse._SubParsersAction)]
+    assert len(subs) == 1, "expected exactly one subparsers action"
+    return len(subs[0].choices)
+
+
+def test_every_readme_states_the_real_number_of_subcommands():
+    """Three READMEs said five after `punct` made it six.
+
+    Nothing recomputed it, so the number sat there being wrong in three
+    languages at once. A figure written in prose and never recomputed is the
+    same shape of defect as a gate that cannot fail, which is the thing this
+    repository is about: it reads as a fact and costs nothing to be wrong.
+    """
+    import re as _re  # noqa: PLC0415
+
+    expected = _parser_subcommand_count()
+    wrong = []
+
+    # Discovered, not listed. The first version of this test iterated the
+    # mapping's own keys, so a README.fr.md would have been invisible to it
+    # while the comment above promised the opposite.
+    readmes = sorted(p.name for p in ROOT.glob("README*.md"))
+    assert readmes, "no README found at the repository root"
+    unconfigured = [n for n in readmes if n not in SUBCOMMAND_COUNT_PATTERNS]
+    assert not unconfigured, (
+        f"these READMEs have no subcommand-count pattern, so nothing checks "
+        f"their figure: {unconfigured}. Add one to "
+        f"SUBCOMMAND_COUNT_PATTERNS.")
+
+    for name in readmes:
+        pattern = SUBCOMMAND_COUNT_PATTERNS[name]
+        text = (ROOT / name).read_text(encoding="utf-8")
+        match = _re.search(pattern, text)
+        if match is None:
+            wrong.append(f"{name}: no subcommand count found at all "
+                         f"(pattern {pattern!r} matched nothing)")
+            continue
+        token = match.group(1)
+        found = _WORDS.get(token.lower(), None)
+        if found is None:
+            found = int(token) if token.isdigit() else None
+        if found != expected:
+            wrong.append(f"{name}: says {token} ({found}), parser has {expected}")
+
+    assert not wrong, "\n  ".join([""] + wrong)
+
+if __name__ == "__main__":
+    sys.exit(_base.run_module(dict(globals())))

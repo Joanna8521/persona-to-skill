@@ -241,7 +241,7 @@ date, and CI runs it, so a stale page is a failing check rather than a quiet
 lie. The reference pages are extracted from the frozen contract, the gate
 modules and the argument parser, which is what makes them worth having.
 
-Five subcommands. Each wraps a function that already existed and was already
+Six subcommands. Each wraps a function that already existed and was already
 tested, so the command line adds argument parsing and exit codes and nothing
 else: a CLI that contains judgement of its own is a second implementation, and
 the two drift.

@@ -1,0 +1,215 @@
+{
+  "subject": {
+    "name": "A. Example",
+    "slug": "a-example"
+  },
+  "version": "1.0",
+  "scope": "PUBLISHED",
+  "seats": {
+    "oppose": {
+      "premortem": [
+        {
+          "claim": "Dies on single-store economics",
+          "source_id": "s1",
+          "quote": "a store never reaches breakeven"
+        }
+      ],
+      "refusals": [
+        {
+          "claim": "Will not discount to close",
+          "source_id": "s1",
+          "quote": "I walk away from a stalled deal rather than discount"
+        }
+      ],
+      "underestimated": [
+        {
+          "claim": "Cost of holding a standard through a partner",
+          "attribution": "inference",
+          "derived_from": [
+            "s9"
+          ]
+        }
+      ]
+    },
+    "evidence": {
+      "demanded_before_acting": [
+        {
+          "claim": "Cost per store for the specific site, before signing",
+          "source_id": "s1",
+          "quote": "below 1,200 a store never reaches breakeven"
+        }
+      ]
+    }
+  },
+  "entry_order": [
+    "decompose",
+    "oppose",
+    "evidence",
+    "crosscheck",
+    "synthesise",
+    "interrogate"
+  ],
+  "unfilled_seats_acknowledged": [
+    "decompose",
+    "support",
+    "crosscheck",
+    "synthesise",
+    "interrogate"
+  ],
+  "contradictions": [
+    {
+      "id": "c1",
+      "earlier": {
+        "claim": "Own the store, because owning it is how the standard is held",
+        "source_id": "s1",
+        "quote": "owning the site is the only way to hold the standard"
+      },
+      "later": {
+        "claim": "Find a local partner",
+        "source_id": "s9",
+        "quote": "I would rather find a local partner"
+      },
+      "status": "unresolved",
+      "reconciling_condition": "",
+      "why_unresolved": "neither source gives a market-size figure, and the later source says the partner's numbers are not visible"
+    }
+  ],
+  "sensitivity": [
+    {
+      "id": "f1",
+      "decision_class": "opening a store",
+      "quantity": "cost per store",
+      "threshold": "1,200",
+      "direction": "below_stops",
+      "source_id": "s1",
+      "quote": "below 1,200 a store never reaches breakeven",
+      "known": false,
+      "how_to_find": "run one store for a quarter and measure it"
+    }
+  ],
+  "sources": [
+    {
+      "id": "s1",
+      "tier": "T1",
+      "authorship": "self_written"
+    },
+    {
+      "id": "s9",
+      "tier": "T1",
+      "authorship": "self_written"
+    }
+  ],
+  "holdout": [
+    {
+      "aligned": true,
+      "baseline_aligned": false
+    },
+    {
+      "aligned": true,
+      "baseline_aligned": false
+    },
+    {
+      "aligned": true,
+      "baseline_aligned": false
+    },
+    {
+      "aligned": true,
+      "baseline_aligned": false
+    },
+    {
+      "aligned": true,
+      "baseline_aligned": false
+    },
+    {
+      "aligned": true,
+      "baseline_aligned": true
+    },
+    {
+      "aligned": true,
+      "baseline_aligned": true
+    },
+    {
+      "aligned": true,
+      "baseline_aligned": true
+    },
+    {
+      "aligned": false,
+      "baseline_aligned": true
+    },
+    {
+      "aligned": false,
+      "baseline_aligned": true
+    },
+    {
+      "aligned": false,
+      "baseline_aligned": true
+    },
+    {
+      "aligned": false,
+      "baseline_aligned": true
+    }
+  ],
+  "holdout_by_seat": {
+    "oppose": [
+      {
+        "aligned": true,
+        "baseline_aligned": false
+      },
+      {
+        "aligned": true,
+        "baseline_aligned": false
+      },
+      {
+        "aligned": true,
+        "baseline_aligned": false
+      },
+      {
+        "aligned": true,
+        "baseline_aligned": false
+      },
+      {
+        "aligned": true,
+        "baseline_aligned": false
+      }
+    ],
+    "evidence": [
+      {
+        "aligned": true,
+        "baseline_aligned": true
+      },
+      {
+        "aligned": true,
+        "baseline_aligned": true
+      },
+      {
+        "aligned": true,
+        "baseline_aligned": true
+      }
+    ],
+    "decompose": [
+      {
+        "aligned": false,
+        "baseline_aligned": true
+      },
+      {
+        "aligned": false,
+        "baseline_aligned": true
+      },
+      {
+        "aligned": false,
+        "baseline_aligned": true
+      },
+      {
+        "aligned": false,
+        "baseline_aligned": true
+      }
+    ]
+  },
+  "disclosure": {
+    "reconstruction_notice": "Reconstructed from 2 public sources. This is not A. Example, and A. Example does not exist: the sources were written for this example.",
+    "not_endorsed": "A. Example did not author, review, or endorse this.",
+    "source_count": 2,
+    "holdout_alignment": "100% over 5 divergent items",
+    "retrieved_date": "2026-11-27"
+  }
+}
