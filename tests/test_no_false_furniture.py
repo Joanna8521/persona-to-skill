@@ -265,6 +265,52 @@ def test_the_punctuation_gate_actually_exists_now():
     assert "validate_punct" in ci, "the gate exists but CI does not run it"
 
 
+def test_every_test_file_runs_as_a_script():
+    """`_base.run_module` exists so that a test file runs without pytest.
+
+    It only works if the file ends with the block that calls it, and a file
+    missing that block is silently pytest-only: pytest collects it, everything
+    is green, and `python3 tests/that_file.py` prints nothing and exits 0.
+
+    Both files added with the CLI were missing it. The check that was supposed
+    to catch it searched the file's text for "run_module", and a COMMENT
+    mentioning run_module satisfied that search. A guard that its own prose can
+    satisfy is not a guard, so this one looks for the call itself.
+    """
+    missing = []
+    for f in TESTS:
+        if f.name == "_base.py":
+            continue
+        src = f.read_text(encoding="utf-8")
+        tree = ast.parse(src)
+        # The call has to be in executable code, not in a string or a comment.
+        called = any(
+            isinstance(n, ast.Attribute) and n.attr == "run_module"
+            for n in ast.walk(tree)
+        )
+        guarded = '__name__ == "__main__"' in src or "__name__ == '__main__'" in src
+        if not (called and guarded):
+            missing.append(f.name)
+    assert not missing, (
+        f"these test files cannot run as scripts: {missing}. Each needs the "
+        f'`if __name__ == "__main__": sys.exit(_base.run_module(dict(globals())))` '
+        f"block that every other one has."
+    )
+
+
+def test_every_test_file_has_at_least_one_test():
+    """A test file with no test_* function passes forever, guarding nothing."""
+    empty = []
+    for f in TESTS:
+        if f.name == "_base.py":
+            continue
+        tree = ast.parse(f.read_text(encoding="utf-8"))
+        if not any(isinstance(n, ast.FunctionDef) and n.name.startswith("test_")
+                   for n in tree.body):
+            empty.append(f.name)
+    assert not empty, f"test files with no tests in them: {empty}"
+
+
 if __name__ == "__main__":
     import sys
     sys.exit(_base.run_module(dict(globals())))

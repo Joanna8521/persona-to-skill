@@ -135,6 +135,77 @@ T3 是一個**類別**，不是一個門檻。沒有任何授權紀錄、沒有�
 * **無法**重建來源從未記錄過的判斷力。語料稀薄就產出稀薄的結果，並且照實回報它稀薄。
 * **無法**偵測對象在建置完成之後撤回了授權。
 
+## 安裝與使用
+
+```bash
+pip install .
+```
+
+五個子指令。每一個都只是包住一個**已經存在、已經測過**的函式，所以命令列只多
+了參數解析與退出碼，別的沒有：一支自己帶判斷的 CLI 是第二套實作，而兩套一定
+會分岔。
+
+```bash
+# 這個網址可以抓嗎？由 robots.txt 決定，不由別的決定。
+persona-to-skill fetch https://example.com/post/1 --robots robots.txt
+
+# 把符合匯入契約形狀的記錄寫成語料目錄。
+persona-to-skill import export.json \
+    --subject "某位實務者" --tier T2 --corpus corpus/
+
+# 跑完一個 bundle 的每一道閘門，不打包。這一個是給 CI 用的形狀。
+persona-to-skill gates bundle.json --corpus corpus/
+
+# 先過閘門，每一道都過才寫 zip。
+persona-to-skill package bundle.json --corpus corpus/ --out dist/
+
+# 文件的標點閘門。
+persona-to-skill punct docs/
+```
+
+**退出碼就是它之所以是一支指令的全部理由。** 0 代表閘門過了，非零代表沒過。
+任何印出判定卻 exit 0 的東西，都是一道放不進 CI job 的閘門，而那等於沒有閘門。
+不給子指令直接跑 `persona-to-skill` 也是非零：一支什麼都沒做卻成功的指令，
+是同一個失敗的縮小版。
+
+<details>
+<summary>這支指令有十一個 commit 不存在，而沒有任何東西發現</summary>
+
+`pyproject.toml` 從第一個 commit 就宣告了它：
+
+```toml
+[project.scripts]
+persona-to-skill = "persona_to_skill.cli:main"
+```
+
+`persona_to_skill/cli.py` 不存在。`pip install .` 成功，`pip show` 也回報裝好
+了，然後：
+
+```
+$ persona-to-skill --help
+ModuleNotFoundError: No module named 'persona_to_skill.cli'
+```
+
+321 個測試與 11 道 CI 檢查全程綠的，因為沒有一個**跑過裝起來的那支指令**。
+測試 import 這個套件；入口點是由一支 console script 解析的，而那支腳本只在安裝
+之後才存在。
+
+這是第四種「看起來是閘門其實不是」，而且是最純的那一種。另外三種是錯的、過期
+的、沒測的，每一種至少還有東西可以檢查。這一種是**宣告了但不存在**：它在打包
+後設資料裡讀起來像一個功能，而它解析到的是什麼都沒有。
+
+現在有兩樣東西壓著它。`tests/test_entry_points.py` 解析 `[project.scripts]`，
+把每一個宣告的目標都解析一次，這會抓到模組不存在。CI 多一步從 repo 外面的暫存
+目錄去**呼叫裝起來的那支指令**，這會抓到其餘的：console script 產錯、只在 repo
+根目錄外才失敗的 import、沒有傳回來的退出碼。
+
+寫它的時候又犯了同一個類別、低一層的錯。第一版拿判定去比對 `fetch.FETCH_OK`，
+而那個常數不存在（實際是 `FETCH` 與 `IMPORT_ONLY`）。`cli.py` import 得起來、
+新的守衛是綠的，而每一次 `fetch` 都以 traceback 結束。所以才有
+`tests/test_cli.py`，它**呼叫** `main(argv)` 並斷言退出碼，而不是 import 完
+就停。
+</details>
+
 ## 閘門
 
 **五道，每一道都配有負向測試：餵一份故意弄壞的輸入，它必須紅燈。** 一道不會失敗的閘門比沒有閘門更糟，因為它給出假的安全感。

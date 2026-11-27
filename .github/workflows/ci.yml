@@ -51,6 +51,33 @@ jobs:
           done
           exit $status
 
+      # The installed console script, actually invoked.
+      #
+      # pyproject.toml declared `persona-to-skill = "persona_to_skill.cli:main"`
+      # for eleven commits while persona_to_skill/cli.py did not exist. The
+      # install above succeeded, 321 tests were green, and the command died
+      # with ModuleNotFoundError on its first run. Nothing here ran it.
+      #
+      # tests/test_entry_points.py now resolves the declared target, which
+      # catches an absent module. This step catches the rest: a console script
+      # that the packaging metadata generates wrong, an import that only fails
+      # outside the repo root, and an exit code that does not come back.
+      - name: the installed command, invoked
+        shell: bash
+        run: |
+          set -e
+          cd "$(mktemp -d)"   # outside the repo: no sys.path luck
+          persona-to-skill --help > /dev/null
+          persona-to-skill fetch https://example.com/a > /dev/null
+          echo '{}' > bundle.json
+          mkdir corpus
+          # An empty bundle must FAIL. A gate that exits 0 on nothing cannot be
+          # put in a CI job, which is the same as not having one.
+          if persona-to-skill gates bundle.json --corpus corpus > /dev/null; then
+            echo "::error::gates exited 0 on an empty bundle"
+            exit 1
+          fi
+
   lint:
     name: lint
     runs-on: ubuntu-latest

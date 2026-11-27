@@ -215,6 +215,83 @@ Stated plainly so the tool is not read as offering what it cannot:
   yields a sparse result, reported as sparse.
 * Cannot detect that a subject withdrew consent after a build.
 
+## Install and run
+
+```bash
+pip install .
+```
+
+Five subcommands. Each wraps a function that already existed and was already
+tested, so the command line adds argument parsing and exit codes and nothing
+else: a CLI that contains judgement of its own is a second implementation, and
+the two drift.
+
+```bash
+# May this URL be fetched? robots.txt decides, and nothing else.
+persona-to-skill fetch https://example.com/post/1 --robots robots.txt
+
+# Records in the import contract shape into a corpus directory.
+persona-to-skill import export.json \
+    --subject "A Practitioner" --tier T2 --corpus corpus/
+
+# Every gate on a bundle, without packaging. This is the CI-shaped one.
+persona-to-skill gates bundle.json --corpus corpus/
+
+# Gate, then write the zip only if every gate passed.
+persona-to-skill package bundle.json --corpus corpus/ --out dist/
+
+# The punctuation gate on the documentation.
+persona-to-skill punct docs/
+```
+
+**The exit code is the whole point of it being a command.** 0 means the gate
+passed; non-zero means it did not. Anything that prints a verdict and exits 0
+is a gate that cannot be put in a CI job, which is the same as not having one.
+A bare `persona-to-skill` with no subcommand exits non-zero too, because a
+command that succeeds having done nothing is the same failure in miniature.
+
+<details>
+<summary>This command did not exist for eleven commits, and nothing noticed</summary>
+
+`pyproject.toml` declared it from the first commit:
+
+```toml
+[project.scripts]
+persona-to-skill = "persona_to_skill.cli:main"
+```
+
+`persona_to_skill/cli.py` did not exist. `pip install .` succeeded, `pip show`
+reported the package as installed, and then:
+
+```
+$ persona-to-skill --help
+ModuleNotFoundError: No module named 'persona_to_skill.cli'
+```
+
+321 tests and eleven CI checks were green throughout, because not one of them
+ran the installed command. The tests import the package; the entry point is
+resolved by a console script that only exists after an install.
+
+This is a fourth shape of a gate that is not one, and the purest form of it.
+The other three are wrong, stale, or untested, and each at least has something
+to inspect. This one is **declared and absent**: it reads as a feature in the
+packaging metadata and resolves to nothing at all.
+
+Two things now hold it down. `tests/test_entry_points.py` parses
+`[project.scripts]` and resolves every declared target, which catches an absent
+module. A CI step invokes the installed command from a temporary directory
+outside the repo, which catches the rest: a console script generated wrong, an
+import that only fails outside the repo root, an exit code that does not come
+back.
+
+Writing it produced the same class of bug one level down. The first version
+compared a verdict against `fetch.FETCH_OK`, a constant that does not exist
+(they are `FETCH` and `IMPORT_ONLY`). Importing `cli.py` succeeded, the new
+guard went green, and every `fetch` invocation ended in a traceback. Hence
+`tests/test_cli.py`, which calls `main(argv)` and asserts on exit codes rather
+than importing the module and stopping there.
+</details>
+
 ## Gates
 
 Five, each with negative tests that must go red on a deliberately broken input.
