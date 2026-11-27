@@ -265,6 +265,7 @@ def test_the_punctuation_gate_actually_exists_now():
     assert "validate_punct" in ci, "the gate exists but CI does not run it"
 
 
+
 def test_no_absolute_paths_outside_the_repo():
     """An absolute path is correct on the machine it was written on.
 
