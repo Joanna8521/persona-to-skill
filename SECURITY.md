@@ -19,9 +19,9 @@ output, or a holdout score that counts consensus answers as alignment. These are
 the project's whole purpose; a bypass is a vulnerability, not a bug.
 
 **Corpus-driven injection.** Source material is untrusted input. A corpus file
-that steers the pipeline through its own content — instructions in a transcript,
-control characters, bidirectional overrides that change how a quote renders
-against what was verified — is a vulnerability.
+that steers the pipeline through its own content is a vulnerability:
+instructions in a transcript, control characters, or bidirectional overrides
+that change how a quote renders against what was verified.
 
 ## Verifying what you installed
 

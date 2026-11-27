@@ -23,7 +23,7 @@ floor of four negative assertions per gate.
 
 Everything in `persona_to_skill/contract.py` is a frozen contract. Changing one
 changes what the tool may produce, so it needs a version bump and an entry in
-`FROZEN.md` explaining what changed and why — never an in-place edit.
+`FROZEN.md` explaining what changed and why, never an in-place edit.
 
 If a threshold's *meaning* changes while its number stays the same, that still
 needs an entry. `HOLDOUT_MIN_ALIGNMENT` stayed at 0.80 when it began measuring

@@ -19,8 +19,8 @@ which is the thing worth digging into.
 
 **Confidence now conflicts only with a gap that bears on the decision.** The
 first version forbade any open gap above `CONFIDENCE_REQUIRING_NO_GAPS`, which
-was wrong twice. It blocked a reasonable memo — high confidence with a minor
-gap noted — and the cheapest way to satisfy it was to delete the gap, so the
+was wrong twice. It blocked a reasonable memo, high confidence with a minor
+gap noted, and the cheapest way to satisfy it was to delete the gap, so the
 rule paid people to do the one thing the schema exists to prevent. The
 combination is now explicit rather than forbidden: a gap is either marked
 `{"bears_on_decision": false}` or it counts against the confidence. An unmarked
@@ -28,16 +28,16 @@ gap counts as bearing, so marking is the cheap path and deleting still hits the
 opposite rule. Added `GAP_PERIPHERAL_KEY`.
 
 **The evasion word list is a floor, not a gate.** It is lexical, so it is
-gameable — the list is public and "整體來看需要權衡各方面因素" is the same dodge
-in words it does not hold — and it trips on mention as well as use ("不能用綜合
-評估帶過" is a correct sentence). It now blocks only where a field's whole
+gameable, since the list is public and "整體來看需要權衡各方面因素" is the same
+dodge in words it does not hold, and it trips on mention as well as use
+("不能用綜合評估帶過" is a correct sentence). It now blocks only where a field's whole
 content is the phrase, and warns otherwise, saying in the warning that it
 cannot tell a dodge from a mention.
 
 A structural replacement was considered and rejected rather than invented: no
 reliable test separates a dodge from a specific statement, because "the unit
 economics never reach breakeven" has neither a condition nor a number and is
-not evasive at all. One structural check was added where it *is* sound —
+not evasive at all. One structural check was added where it *is* sound:
 `THRESHOLD_NUMBER` requires a flip-condition threshold to contain a number,
 since a threshold is the value a quantity is compared against and without one
 there is nothing to go and find out.
@@ -65,8 +65,8 @@ no reconstruction loaded at all.
 
 | Pool | Baseline | Gated |
 |---|---|---|
-| consensus | already matches the subject | no -- the default gets these right too |
-| divergent | wrong | **yes** -- only judgement that carried across can be right |
+| consensus | already matches the subject | no, the default gets these right too |
+| divergent | wrong | **yes**, only judgement that carried across can be right |
 
 So `0.80` now means *alignment where the default answer would have failed*,
 which is the lift over baseline measured directly rather than subtracted.
@@ -107,9 +107,9 @@ Gates: `G1-consent`, `G2-anchor`, `G3-disclosure`, `G4-holdout`.
 An earlier draft had `MODES = ("SELF", "PUBLIC")`, collapsing two orthogonal
 questions into one switch:
 
-* **whose material is this** -- already answered per-source by the tier system,
+* **whose material is this**, already answered per-source by the tier system,
   so a mode for it was redundant;
-* **where does the output go** -- the only question that needs a mode.
+* **where does the output go**, the only question that needs a mode.
 
 The collapse left the most common real use with nowhere to sit: *build an
 advisor from a public figure's public material, for your own private use*. It
@@ -121,8 +121,8 @@ So scope is the axis, and the gates divide by what they are actually for:
 | Gate | About | Scope-dependent |
 |---|---|---|
 | G1 source tiers | lawfulness of the material | no |
-| G2 source anchors | quality -- protects the **builder** | no |
-| G4 holdout | quality -- protects the **builder** | no |
+| G2 source anchors | quality, protects the **builder** | no |
+| G4 holdout | quality, protects the **builder** | no |
 | G3 disclosure | informing a third party | **yes** |
 
 G2 and G4 run on private builds too, and matter more there: an advisor that

@@ -61,6 +61,9 @@ jobs:
           python-version: "3.13"
       - run: python -m pip install ruff==0.6.9
       - run: python -m ruff check persona_to_skill tests
+      - name: punctuation gate on the documentation
+        run: python -m persona_to_skill.validate_punct
+
       - name: no non-ASCII in any path
         run: |
           if LC_ALL=C git ls-files | LC_ALL=C grep -nP '[^\x00-\x7F]'; then

@@ -6,13 +6,13 @@ appear in `FROZEN.md` with the reasoning.
 ## [Unreleased]
 
 ### Added
-- Frozen contract (`persona_to_skill/contract.py`): source tiers T0–T3, output
+- Frozen contract (`persona_to_skill/contract.py`): source tiers T0 to T3, output
   scopes, consent record shape, holdout thresholds, impersonation forms in
   English and Chinese, declared capability limits.
 - Four gates: `G1-consent`, `G2-anchor`, `G3-disclosure`, `G4-holdout`.
 - `tests/test_gates_have_teeth.py`: every gate must reject a deliberately
   broken input, and a clean input must still pass.
-- CI across Python 3.9–3.13 on Linux, plus macOS and Windows runs, because the
+- CI across Python 3.9 to 3.13 on Linux, plus macOS and Windows runs, because the
   gates compare quoted text against files on disk.
 - `gates-intact.yml`: a separate workflow proving the gates still bite.
 - CodeQL, Dependabot for actions.
