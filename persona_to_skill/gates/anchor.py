@@ -148,10 +148,39 @@ def check(claims: List[Dict[str, Any]], corpus_dir: Path) -> Verdict:
     # Read each source once, from disk, as the authority.
     cache: Dict[str, str] = {}
 
+    resolved_root = corpus_dir.resolve()
+
     def corpus_text(source_id: str) -> str:
-        if source_id not in cache:
-            hits = sorted(corpus_dir.glob(f"{source_id}.*"))
-            cache[source_id] = _normalize(hits[0].read_text(encoding="utf-8", errors="replace")) if hits else ""
+        """Read a source by id, from inside the corpus directory only.
+
+        A source_id goes into a glob pattern, and "../secret" is a perfectly
+        legal relative pattern: before this check, such an id read a file
+        outside the corpus and G2 then confirmed, correctly, that the quote
+        matched. An attacker or a confused extraction could quote any file on
+        disk as if it were the subject's words.
+
+        So an id must be a single path component with no separators and no
+        parent reference, and the resolved file must still sit under the corpus
+        root after symlinks are followed. Both checks, because either alone
+        leaves a way through: the first stops the pattern escaping, the second
+        stops a symlink inside the corpus pointing out of it.
+        """
+        if source_id in cache:
+            return cache[source_id]
+        cache[source_id] = ""
+        if (not source_id or "/" in source_id or "\\" in source_id
+                or source_id in (".", "..") or source_id.startswith(".")):
+            return ""
+        for hit in sorted(corpus_dir.glob(f"{source_id}.*")):
+            try:
+                real = hit.resolve()
+                real.relative_to(resolved_root)
+            except (OSError, ValueError):
+                continue        # outside the corpus, or unreadable: not a source
+            if not real.is_file():
+                continue
+            cache[source_id] = _normalize(real.read_text(encoding="utf-8", errors="replace"))
+            break
         return cache[source_id]
 
     checked = inferences = 0

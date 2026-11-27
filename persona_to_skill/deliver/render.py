@@ -154,9 +154,9 @@ def refusals_md(bundle: Dict[str, Any]) -> str:
     name = _name(bundle)
     items = _entries(bundle, "oppose", "refusals")
     out = [f"# {name}: what they refuse\n",
-           "Anyone can paraphrase a practitioner's positive claims. Almost nobody can "
-           "guess the conditions under which they decline, which is why this file "
-           "behaves like a fingerprint.\n",
+           ("Anyone can paraphrase a practitioner's positive claims. Almost nobody can "
+            "guess the conditions under which they decline, which is why this file "
+            "behaves like a fingerprint.\n"),
            _bullets(items), ""]
     pm = _entries(bundle, "oppose", "premortem")
     if pm:
@@ -242,9 +242,9 @@ def holdout_report_md(bundle: Dict[str, Any]) -> str:
     prof = profile_mod.build(bundle.get("holdout_by_seat") or {})
 
     out = [f"# {name}: holdout report\n",
-           "Questions this subject answered in public, held back from extraction, and "
-           "split by a recorded baseline: the same question answered with no "
-           "reconstruction loaded.\n",
+           ("Questions this subject answered in public, held back from extraction, and "
+            "split by a recorded baseline: the same question answered with no "
+            "reconstruction loaded.\n"),
            "| | Count |", "|---|---|",
            f"| Divergent pool, aligned | {s['divergent']['aligned']} |",
            f"| Divergent pool, diverged | {s['divergent']['diverged']} |",

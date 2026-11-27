@@ -217,6 +217,55 @@ def test_folding_still_cannot_rescue_a_fabricated_quote():
         assert not _matches(src, invented), f"fabrication matched: {invented!r}"
 
 
+
+# ---------------------------------------------------------------------------
+# A source_id reaches a glob pattern, so it reaches the filesystem
+# ---------------------------------------------------------------------------
+
+def test_a_source_id_cannot_escape_the_corpus_directory():
+    """Shipped, and found by testing rather than by reading. "../secret" is a
+    legal relative glob pattern: it read a file outside the corpus and G2 then
+    confirmed, correctly, that the quote matched. Anything on disk could be
+    quoted as the subject's words."""
+    d = Path(tempfile.mkdtemp())
+    (d / "s1.txt").write_text("I walk away rather than discount.", encoding="utf-8")
+    (d.parent / "secret.txt").write_text("TOP SECRET CONTENT", encoding="utf-8")
+    for sid in ("../secret", "s1/../../secret", "..", ".", "/etc/hostname",
+                "..\\secret"):
+        v = anchor.check(
+            [{"id": "c", "text": "x", "source_id": sid, "quote": "TOP SECRET"}], d)
+        assert not v.passed, f"source_id {sid!r} escaped the corpus"
+
+
+def test_a_symlink_out_of_the_corpus_is_not_a_source():
+    """The second half. Rejecting separators stops the pattern escaping; it
+    does not stop a link inside the corpus pointing out of it."""
+    import os
+    d = Path(tempfile.mkdtemp())
+    (d / "s1.txt").write_text("harmless.", encoding="utf-8")
+    (d.parent / "secret.txt").write_text("TOP SECRET CONTENT", encoding="utf-8")
+    os.symlink(d.parent / "secret.txt", d / "sneaky.txt")
+    v = anchor.check(
+        [{"id": "c", "text": "x", "source_id": "sneaky", "quote": "TOP SECRET"}], d)
+    assert not v.passed
+
+
+def test_a_dotfile_is_not_a_source():
+    d = Path(tempfile.mkdtemp())
+    (d / ".hidden.txt").write_text("quiet.", encoding="utf-8")
+    v = anchor.check(
+        [{"id": "c", "text": "x", "source_id": ".hidden", "quote": "quiet"}], d)
+    assert not v.passed
+
+
+def test_an_ordinary_source_id_still_reads():
+    """The fix has to discriminate, not refuse everything."""
+    d = Path(tempfile.mkdtemp())
+    (d / "s1.txt").write_text("I walk away rather than discount.", encoding="utf-8")
+    assert anchor.check([{"id": "c", "text": "x", "source_id": "s1",
+                          "quote": "I walk away rather than discount"}], d).passed
+
+
 if __name__ == "__main__":
     import sys
     sys.exit(_base.run_module(dict(globals())))
