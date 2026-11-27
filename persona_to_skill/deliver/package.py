@@ -39,6 +39,7 @@ from ..gates import Verdict
 from ..gates import anchor as anchor_gate
 from ..gates import consent as consent_gate
 from ..gates import disclosure as disclosure_gate
+from ..contract import SEAT_ENTRY_ORDER
 from ..gates import holdout as holdout_gate
 from ..gates import reconcile as reconcile_gate
 from ..gates import interrogation as interrogation_gate
@@ -147,7 +148,15 @@ def run_gates(bundle: Dict[str, Any], corpus_dir: Path,
     # G2 exempts a claim marked `inference` from the quote check on the
     # condition that the output labels it. G3 is where that condition is
     # enforced, so it needs the claims, not just the text.
-    inference_claims = [e for e in seats_gate.all_entries(bundle)
+    #
+    # Only the seats SKILL.md renders. `all_entries` walks SEATS, which
+    # includes `support`; `skill_md` walks SEAT_ENTRY_ORDER, which does not,
+    # because the support seat is reachable on request and never volunteered.
+    # An inference there would have been reported as unlabelled and blocked
+    # an otherwise valid package, for a claim that never reaches the reader
+    # and so cannot be mislabelled to them.
+    inference_claims = [e for seat in SEAT_ENTRY_ORDER
+                        for e in seats_gate.seat_entries(bundle, seat)
                         if e.get("attribution") == "inference"]
     verdicts.append(disclosure_gate.check(
         rendered.get("SKILL.md", ""), name, scope, bundle.get("disclosure"),

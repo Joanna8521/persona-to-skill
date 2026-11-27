@@ -145,5 +145,139 @@ def test_a_failing_run_with_an_empty_directory_says_nothing_about_archives():
     assert not any("still in" in e for e in errors), errors
 
 
+# ── three ways the first version of this gate was still loose ──
+
+def _mixed(aligned_in_whole, aligned_in_slice):
+    whole = [{"aligned": aligned_in_whole, "baseline_aligned": False}
+             for _ in range(5)] + [dict(CON) for _ in range(7)]
+    slices = {"oppose": [{"aligned": aligned_in_slice, "baseline_aligned": False}
+                         for _ in range(5)],
+              "evidence": [dict(CON) for _ in range(7)]}
+    return whole, slices
+
+
+def test_an_unknown_observation_is_not_a_failed_one():
+    """`bool()` collapsed null into False, so a global list recording
+    `aligned: null` and a per-seat list recording `aligned: false` compared
+    equal while the scorers read them as 0 divergent scored against 5."""
+    whole, slices = _mixed(None, False)
+    v = reconcile.check(whole, slices, {"holdout_alignment": "not measured"},
+                        "PUBLISHED")
+    assert not v.passed
+    assert any("different runs" in e for e in v.errors), v.errors
+    assert "unknown" in [e for e in v.errors if "different runs" in e][0]
+
+
+def test_the_same_observation_on_both_sides_still_reconciles():
+    whole, slices = _mixed(True, True)
+    assert reconcile.check(whole, slices, {"holdout_alignment": "100%"},
+                           "PUBLISHED").passed
+
+
+def _at(alignment):
+    """A holdout whose divergent pool scores exactly `alignment`."""
+    aligned = round(alignment * 5)
+    return ([dict(DIV) for _ in range(aligned)]
+            + [{"aligned": False, "baseline_aligned": False}
+               for _ in range(5 - aligned)]
+            + [dict(CON) for _ in range(7)])
+
+
+def test_a_longer_number_containing_the_figure_is_not_the_figure():
+    """A substring test passed `180% over 5` when the computed figure was
+    `80%`: the gate built to stop a disclosure contradicting the computation
+    accepted text that contradicted it."""
+    whole = _at(0.8)
+    slices = {"oppose": whole[:5], "evidence": whole[5:]}
+    assert reconcile.check(whole, slices,
+                           {"holdout_alignment": "80% over 5 divergent items"},
+                           "PUBLISHED").passed
+    for wrong in ("180% over 5", "800%", "not 80%", "80% over 5, 92% raw"):
+        v = reconcile.check(whole, slices, {"holdout_alignment": wrong},
+                            "PUBLISHED")
+        assert not v.passed, f"{wrong!r} was accepted"
+
+
+def test_an_inference_in_the_support_seat_does_not_block():
+    """`all_entries` walks SEATS, which includes `support`; `skill_md` walks
+    SEAT_ENTRY_ORDER, which does not. Checking the unrendered seat blocked an
+    otherwise valid package over a claim no reader ever sees."""
+    import test_build_package as fixture  # noqa: PLC0415
+
+    b = fixture.bundle()
+    b["seats"]["support"] = {"strongest_case": [
+        {"claim": "A claim made only on request", "attribution": "inference",
+         "derived_from": ["s1"]}]}
+    b["unfilled_seats_acknowledged"] = [
+        s for s in b["unfilled_seats_acknowledged"] if s != "support"]
+
+    with tempfile.TemporaryDirectory() as tmp:
+        _, verdicts, _ = package.run(b, fixture.corpus_dir(), Path(tmp))
+    g3 = next(v for v in verdicts if v.gate == "G3-disclosure")
+    assert g3.passed, g3.errors
+
+
+# ── the seat an observation landed in ──────────────────
+
+def _with_ids():
+    whole = ([dict(DIV, id=f"q{i}") for i in range(1, 6)]
+             + [dict(CON, id=f"q{i}") for i in range(6, 13)])
+    slices = {"oppose": [dict(x) for x in whole[:5]],
+              "evidence": [dict(x) for x in whole[5:]]}
+    return whole, slices
+
+
+def test_without_ids_the_gate_says_what_it_did_not_check():
+    """Moving an observation between seats leaves the totals unchanged while
+    reversing which seat the profile tells a reader to trust. The aggregate
+    comparison cannot see it, so the verdict says so instead of letting
+    silence imply otherwise."""
+    whole = [dict(DIV) for _ in range(5)] + [dict(CON) for _ in range(7)]
+    swapped = {"oppose": [dict(CON) for _ in range(5)],
+               "evidence": [dict(DIV) for _ in range(5)] + [dict(CON) for _ in range(2)]}
+    v = reconcile.check(whole, swapped, {"holdout_alignment": "100%"}, "PUBLISHED")
+    assert v.passed
+    assert any("carry no ids" in w for w in v.warnings), v.warnings
+
+
+def test_with_ids_a_swapped_seat_blocks():
+    whole, slices = _with_ids()
+    assert reconcile.check(whole, slices, GOOD_DISCLOSURE, "PUBLISHED").passed
+
+    swapped = {"oppose": [dict(CON, id=f"q{i}") for i in range(1, 6)],
+               "evidence": ([dict(DIV, id=f"q{i}") for i in range(6, 11)]
+                            + [dict(CON, id=f"q{i}") for i in range(11, 13)])}
+    v = reconcile.check(whole, swapped, GOOD_DISCLOSURE, "PUBLISHED")
+    assert not v.passed
+    assert any("differ between holdout" in e for e in v.errors), v.errors
+
+
+def test_with_ids_a_missing_item_blocks():
+    whole, slices = _with_ids()
+    slices["evidence"] = slices["evidence"][:-1]
+    v = reconcile.check(whole, slices, GOOD_DISCLOSURE, "PUBLISHED")
+    assert not v.passed
+    assert any("cover different items" in e for e in v.errors), v.errors
+
+
+def test_with_ids_the_same_item_under_two_seats_blocks():
+    whole, slices = _with_ids()
+    slices["oppose"] = slices["oppose"] + [dict(DIV, id="q1")]
+    v = reconcile.check(whole, slices, GOOD_DISCLOSURE, "PUBLISHED")
+    assert not v.passed
+    assert any("more than one seat" in e for e in v.errors), v.errors
+
+
+def test_ids_on_one_side_only_fall_back_to_totals():
+    """Half-identified data is not identified data; the gate does not pretend
+    the assignment was checked."""
+    whole, slices = _with_ids()
+    bare = {k: [{kk: vv for kk, vv in x.items() if kk != "id"} for x in v]
+            for k, v in slices.items()}
+    v = reconcile.check(whole, bare, GOOD_DISCLOSURE, "PUBLISHED")
+    assert v.passed
+    assert any("carry no ids" in w for w in v.warnings), v.warnings
+
+
 if __name__ == "__main__":
     sys.exit(_base.run_module(dict(globals())))
