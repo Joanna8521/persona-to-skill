@@ -56,6 +56,29 @@ Two consequences, and they are the whole design:
    whose public positions are all consensus cannot be meaningfully
    reconstructed.
 
+## Why a person is harder than a book
+
+Distilling a book is mostly transport. The author did the knowledge
+engineering already: the frameworks have names, the chapters have an order, the
+cases are paired to the claims they support.
+
+A practitioner's output has none of that scaffolding. It is scattered across
+years and formats, repetitive, and self-contradictory — the position they held
+in 2021 may be one they have since argued against. It is also weighted the
+wrong way: public material is mostly marketing, so it carries conclusions and
+withholds the reasoning.
+
+That shapes the extraction. Sources are not weighted equally:
+
+| Weight | Material |
+|---|---|
+| High | Interviews under follow-up, public disagreements, post-mortems, cases they declined, answers to hostile questions |
+| Low | Position pieces, promotional writing, quotable lines, course outlines |
+
+A corpus of nothing but keynotes and listicles will not yield a single usable
+decision rule, and the holdout gate will say so rather than produce a
+confident-sounding shell.
+
 ## What it produces
 
 ```
@@ -227,19 +250,6 @@ reported separately. A high unknown rate fails the gate and blames the question
 set, which is where the defect is. (`bool` is a subclass of `int` in Python, so
 a JSON `true` would satisfy a naive integer check and be summed as 1 — this
 module refuses to invent a score nobody recorded.)
-
-## Prior art
-
-[book-to-skill](https://github.com/virgiliojr94/book-to-skill) does this for
-books, and does it well. A book arrives pre-structured: the author already named
-the frameworks, ordered the chapters, and paired the cases. A person's output
-has none of that. It is scattered, repetitive, self-contradictory across years,
-and weighted toward conclusions rather than reasoning — which is why the
-extraction here is weighted toward the opposite: interviews under follow-up,
-public disagreements, post-mortems, and refusals.
-
-The evaluation harness follows book-to-skill's approach to scoring, which
-refuses to derive missing observations.
 
 ## License
 
