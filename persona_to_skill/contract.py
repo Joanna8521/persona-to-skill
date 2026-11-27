@@ -367,10 +367,12 @@ SEAT_OBLIGATIONS = {
 # admire: it agrees, in a voice they trust, and agreement from that voice does
 # not read as flattery, it reads as confirmation.
 #
-# So a reconstruction leads with the oppose seat. The support seat is reachable
-# but never volunteered, and the deliverable is what this subject would object
-# to rather than what they would advise. The test of an answer is that it
-# survives the objections, not that it collects an endorsement.
+# So the first seat that takes a POSITION is oppose. Decompose comes before it
+# because a problem has to be carved up before anything can be objected to, and
+# carving it up is framing rather than a position. The support seat is
+# reachable but never volunteered, and the deliverable is what this subject
+# would object to rather than what they would advise. The test of an answer is
+# that it survives the objections, not that it collects an endorsement.
 SEAT_ENTRY_ORDER = ("decompose", "oppose", "evidence", "crosscheck",
                     "synthesise", "interrogate")
 SEATS_ON_REQUEST_ONLY = ("support",)

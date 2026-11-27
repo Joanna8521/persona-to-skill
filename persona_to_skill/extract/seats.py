@@ -12,11 +12,12 @@ demand before moving, which number they say decides it.
 Three things this module enforces, each of them a decision about what the
 output is for rather than a detail of its shape.
 
-ADVERSARIAL BY DEFAULT. A reconstruction leads with the oppose seat. The
-support seat exists but is never volunteered. The dangerous user is not the one
-with no view; it is the one who already has an answer, holding a reconstruction
-of somebody they admire, because agreement in that voice does not read as
-flattery, it reads as confirmation.
+ADVERSARIAL BY DEFAULT. The first seat that takes a position is oppose;
+decompose precedes it only because a problem has to be carved up before
+anything can be objected to. The support seat exists and is never volunteered.
+The dangerous user is not the one with no view; it is the one who already has
+an answer, holding a reconstruction of somebody they admire, because agreement
+in that voice does not read as flattery, it reads as confirmation.
 
 AN UNFILLED SEAT IS NOT AN ABSENT TRAIT. A seat with nothing in it means the
 corpus had nothing to say, not that the subject does not deliberate that way.
@@ -163,8 +164,8 @@ def check(bundle: Dict[str, Any] | None) -> Verdict:
     order = bundle.get("entry_order")
     if order is None:
         errors.append(
-            f"bundle declares no entry_order. It must be {list(SEAT_ENTRY_ORDER)}: a "
-            "reconstruction leads with the oppose seat, because the user most at risk "
+            f"bundle declares no entry_order. It must be {list(SEAT_ENTRY_ORDER)}: the "
+            "first seat that takes a position is oppose, because the user most at risk "
             "is the one who already has an answer and wants it confirmed by a voice "
             "they trust.")
     elif list(order) != list(SEAT_ENTRY_ORDER):
