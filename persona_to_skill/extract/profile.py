@@ -61,9 +61,21 @@ def _observation(value: Any) -> Optional[bool]:
 
 
 def score_seat(items: List[Dict[str, Any]]) -> Dict[str, Any]:
-    """Score one seat's holdout slice, deriving nothing unrecorded."""
-    aligned = diverged = consensus = unknown = 0
+    """Score one seat's holdout slice, deriving nothing unrecorded.
+
+    `seen_in_extraction` is honoured here as G4 honours it. It was not, and
+    the two scorers disagreeing was a way to make a seat look distinctive
+    with material the reconstruction had already read: flag the items and G4
+    drops them from the global figure, while this counted them and the
+    profile called the seat distinctive on them. A question the
+    reconstruction was built from measures nothing about transfer, in a seat
+    or across one.
+    """
+    aligned = diverged = consensus = unknown = seen = 0
     for item in items or []:
+        if item.get("seen_in_extraction") is True:
+            seen += 1
+            continue
         obs = _observation(item.get("aligned"))
         base = _observation(item.get("baseline_aligned"))
         if obs is None or base is None:
@@ -77,7 +89,7 @@ def score_seat(items: List[Dict[str, Any]]) -> Dict[str, Any]:
             diverged += 1
 
     scored = aligned + diverged
-    if not items:
+    if not items or seen == len(items):
         verdict = UNFILLED
     elif scored < MIN_DIVERGENT_PER_SEAT:
         # Nothing the default gets wrong, so nothing this seat can be credited
@@ -94,6 +106,7 @@ def score_seat(items: List[Dict[str, Any]]) -> Dict[str, Any]:
         "divergent_aligned": aligned,
         "consensus": consensus,
         "unknown": unknown,
+        "seen_excluded": seen,
         "alignment": (aligned / scored) if scored else None,
     }
 

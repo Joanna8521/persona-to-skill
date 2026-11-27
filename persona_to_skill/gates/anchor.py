@@ -134,7 +134,11 @@ def check(claims: List[Dict[str, Any]], corpus_dir: Path,
     Each claim needs: `text` (what is being asserted), `source_id`, and `quote`
     (the passage it rests on). A claim may instead be marked
     `attribution: "inference"`, which exempts it from the quote check but
-    requires the output to label it as an inference, and G3 checks that label.
+    requires the output to label it as an inference. G3 enforces that: an
+    inference claim the rendered skill does not label BLOCKS there. Until
+    B-reconcile was added, G3 only warned when the word appeared anywhere
+    and said nothing when it was absent, so this comment described a check
+    that did not exist and the exemption rested on nothing.
 
     `sources`, when given, carries each source's authorship. A quote can match
     its source exactly and still not be the subject's own words: The Art of the

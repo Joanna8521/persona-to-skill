@@ -25,7 +25,8 @@ from persona_to_skill import contract
 from persona_to_skill.contract import SEAT_ENTRY_ORDER, SEATS
 from persona_to_skill.collect import sanitize
 from persona_to_skill.extract import contradictions, profile, seats, sensitivity
-from persona_to_skill.gates import anchor, consent, disclosure, holdout, interrogation
+from persona_to_skill.gates import (anchor, consent, disclosure, holdout,
+                                    interrogation, reconcile)
 
 
 def _discovered_gates():
@@ -109,6 +110,9 @@ GOOD_PROFILE = {"oppose": [{"aligned": True, "baseline_aligned": False}] * 5}
 
 
 # Each entry: a call that MUST be rejected, and why it must be.
+_DIVERGENT = [{"aligned": True, "baseline_aligned": False}]
+_CONSENSUS = [{"aligned": True, "baseline_aligned": True}]
+
 BROKEN = [
     ("G1-consent", "prohibited-tier material",
      lambda: consent.check([{"id": "leak", "tier": "T3"}])),
@@ -138,7 +142,7 @@ BROKEN = [
                               "PUBLISHED", {k: "set" for k in contract.DISCLOSURE_REQUIRED_KEYS})),
     ("G3-disclosure", "published output with no disclosure block",
      lambda: disclosure.check("Apply the documented method of A. Example.",
-                              "A. Example", "PUBLISHED", None)),
+                              "A. Example", "PUBLISHED", None, [])),
     ("G4-holdout", "no holdout set at all",
      lambda: holdout.check(None)),
     ("G4-holdout", "a consensus-padded holdout set",
@@ -213,6 +217,24 @@ BROKEN = [
     ("B-profile", "no per-seat holdout supplied",
      lambda: profile.check(None)),
 
+    ("B-reconcile", "per-seat holdout that totals more than the whole",
+     lambda: reconcile.check(_DIVERGENT * 5 + _CONSENSUS * 7,
+                             {"oppose": _DIVERGENT * 5,
+                              "evidence": _CONSENSUS * 8},
+                             {"holdout_alignment": "100%"}, "PUBLISHED")),
+    ("B-reconcile", "a disclosure stating a figure the holdout does not support",
+     lambda: reconcile.check(_DIVERGENT * 5 + _CONSENSUS * 7,
+                             {"oppose": _DIVERGENT * 5,
+                              "evidence": _CONSENSUS * 7},
+                             {"holdout_alignment": "92% over 12 items"},
+                             "PUBLISHED")),
+    ("B-reconcile", "no holdout to reconcile against",
+     lambda: reconcile.check(None, {"oppose": _DIVERGENT * 5},
+                             {"holdout_alignment": "100%"}, "PUBLISHED")),
+    ("B-reconcile", "no per-seat holdout to reconcile",
+     lambda: reconcile.check(_DIVERGENT * 5, None,
+                             {"holdout_alignment": "100%"}, "PUBLISHED")),
+
     ("A-sanitize", "a corpus file carrying bidirectional overrides",
      lambda: sanitize.check(_bidi_corpus())),
     ("A-sanitize", "a corpus directory that is not there",
@@ -279,7 +301,8 @@ def test_a_clean_input_still_passes():
           "quote": "I walk away rather than discount"}], d).passed
     assert disclosure.check("Apply the documented method of A. Example.", "A. Example",
                             "PUBLISHED",
-                            {k: "set" for k in contract.DISCLOSURE_REQUIRED_KEYS}).passed
+                            {k: "set" for k in contract.DISCLOSURE_REQUIRED_KEYS},
+                                []).passed
     assert holdout.check([{"aligned": True, "baseline_aligned": False}] * 10).passed
     assert interrogation.check(GOOD_MEMO, GOOD_STATEMENTS).passed
     assert seats.check(GOOD_BUNDLE).passed

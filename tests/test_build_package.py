@@ -33,6 +33,16 @@ def _e(claim, quote, sid="s1"):
     return {"claim": claim, "source_id": sid, "quote": quote}
 
 
+_DIV = {"aligned": True, "baseline_aligned": False}
+_CON = {"aligned": True, "baseline_aligned": True}
+_HOLDOUT_BY_SEAT = {
+    "oppose": [dict(_DIV) for _ in range(6)],
+    "evidence": [dict(_DIV) for _ in range(4)],
+    "decompose": [dict(_CON) for _ in range(2)],
+}
+_HOLDOUT_BY_SEAT_FLAT = [x for v in _HOLDOUT_BY_SEAT.values() for x in v]
+
+
 def bundle(**over):
     b = {
         "subject": {"name": "A. Example", "slug": "a-example"},
@@ -77,12 +87,13 @@ def bundle(**over):
         }],
         "sources": [{"id": "s1", "tier": "T1", "authorship": "self_written"},
                     {"id": "s9", "tier": "T1", "authorship": "self_written"}],
-        "holdout": [{"aligned": True, "baseline_aligned": False}] * 12,
-        "holdout_by_seat": {
-            "oppose": [{"aligned": True, "baseline_aligned": False}] * 5,
-            "evidence": [{"aligned": True, "baseline_aligned": False}] * 4,
-            "decompose": [{"aligned": True, "baseline_aligned": True}] * 6,
-        },
+        # Derived, not written twice. B-reconcile caught this fixture
+        # claiming 12 observations globally and 15 across its seats, which is
+        # the defect that gate was added for; a fixture that cannot hold two
+        # numbers in step is not a fixture for testing that the product can.
+        "holdout": [dict(x) for x in _HOLDOUT_BY_SEAT_FLAT],
+        "holdout_by_seat": {k: [dict(x) for x in v]
+                            for k, v in _HOLDOUT_BY_SEAT.items()},
         "disclosure": {
             "reconstruction_notice": "Reconstructed from 2 public sources; not the person.",
             "not_endorsed": "A. Example did not author, review, or endorse this.",
