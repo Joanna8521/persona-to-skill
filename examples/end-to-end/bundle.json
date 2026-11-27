@@ -149,11 +149,11 @@
       "baseline_aligned": true
     },
     {
-      "aligned": false,
+      "aligned": true,
       "baseline_aligned": true
     },
     {
-      "aligned": true,
+      "aligned": false,
       "baseline_aligned": true
     }
   ],
@@ -183,11 +183,7 @@
     "evidence": [
       {
         "aligned": true,
-        "baseline_aligned": false
-      },
-      {
-        "aligned": true,
-        "baseline_aligned": false
+        "baseline_aligned": true
       },
       {
         "aligned": true,
@@ -212,15 +208,7 @@
         "baseline_aligned": true
       },
       {
-        "aligned": true,
-        "baseline_aligned": true
-      },
-      {
         "aligned": false,
-        "baseline_aligned": true
-      },
-      {
-        "aligned": true,
         "baseline_aligned": true
       }
     ]

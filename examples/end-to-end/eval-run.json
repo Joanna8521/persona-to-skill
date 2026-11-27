@@ -1,0 +1,112 @@
+{
+  "items": [
+    {
+      "id": "q1",
+      "reconstruction": "the reconstruction's answer to q1",
+      "baseline": "the no-reconstruction answer to q1",
+      "aligned": true,
+      "baseline_aligned": false,
+      "judged_by": "a separate blind judging pass",
+      "blind": true
+    },
+    {
+      "id": "q2",
+      "reconstruction": "the reconstruction's answer to q2",
+      "baseline": "the no-reconstruction answer to q2",
+      "aligned": true,
+      "baseline_aligned": false,
+      "judged_by": "a separate blind judging pass",
+      "blind": true
+    },
+    {
+      "id": "q3",
+      "reconstruction": "the reconstruction's answer to q3",
+      "baseline": "the no-reconstruction answer to q3",
+      "aligned": true,
+      "baseline_aligned": false,
+      "judged_by": "a separate blind judging pass",
+      "blind": true
+    },
+    {
+      "id": "q4",
+      "reconstruction": "the reconstruction's answer to q4",
+      "baseline": "the no-reconstruction answer to q4",
+      "aligned": true,
+      "baseline_aligned": false,
+      "judged_by": "a separate blind judging pass",
+      "blind": true
+    },
+    {
+      "id": "q5",
+      "reconstruction": "the reconstruction's answer to q5",
+      "baseline": "the no-reconstruction answer to q5",
+      "aligned": true,
+      "baseline_aligned": false,
+      "judged_by": "a separate blind judging pass",
+      "blind": true
+    },
+    {
+      "id": "q6",
+      "reconstruction": "the reconstruction's answer to q6",
+      "baseline": "the no-reconstruction answer to q6",
+      "aligned": true,
+      "baseline_aligned": true,
+      "judged_by": "a separate blind judging pass",
+      "blind": true
+    },
+    {
+      "id": "q7",
+      "reconstruction": "the reconstruction's answer to q7",
+      "baseline": "the no-reconstruction answer to q7",
+      "aligned": true,
+      "baseline_aligned": true,
+      "judged_by": "a separate blind judging pass",
+      "blind": true
+    },
+    {
+      "id": "q8",
+      "reconstruction": "the reconstruction's answer to q8",
+      "baseline": "the no-reconstruction answer to q8",
+      "aligned": true,
+      "baseline_aligned": true,
+      "judged_by": "a separate blind judging pass",
+      "blind": true
+    },
+    {
+      "id": "q9",
+      "reconstruction": "the reconstruction's answer to q9",
+      "baseline": "the no-reconstruction answer to q9",
+      "aligned": true,
+      "baseline_aligned": true,
+      "judged_by": "a separate blind judging pass",
+      "blind": true
+    },
+    {
+      "id": "q10",
+      "reconstruction": "the reconstruction's answer to q10",
+      "baseline": "the no-reconstruction answer to q10",
+      "aligned": true,
+      "baseline_aligned": true,
+      "judged_by": "a separate blind judging pass",
+      "blind": true
+    },
+    {
+      "id": "q11",
+      "reconstruction": "the reconstruction's answer to q11",
+      "baseline": "the no-reconstruction answer to q11",
+      "aligned": true,
+      "baseline_aligned": true,
+      "judged_by": "a separate blind judging pass",
+      "blind": true
+    },
+    {
+      "id": "q12",
+      "reconstruction": "the reconstruction's answer to q12",
+      "baseline": "the no-reconstruction answer to q12",
+      "aligned": false,
+      "baseline_aligned": true,
+      "judged_by": "a separate blind judging pass",
+      "blind": true
+    }
+  ]
+}

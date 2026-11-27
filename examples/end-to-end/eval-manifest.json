@@ -1,0 +1,88 @@
+{
+  "items": [
+    {
+      "id": "q1",
+      "question": "A deal has stalled and the buyer is asking for 10% off. What do you do?",
+      "source_id": "s1",
+      "subject_said": "I walk away from a stalled deal rather than discount",
+      "seat": "oppose"
+    },
+    {
+      "id": "q2",
+      "question": "What does discounting to close cost you beyond the margin on that deal?",
+      "source_id": "s1",
+      "subject_said": "Discounting to close teaches the buyer that waiting works",
+      "seat": "oppose"
+    },
+    {
+      "id": "q3",
+      "question": "Demand is forecast to double next quarter. Do you hire now?",
+      "source_id": "s5",
+      "subject_said": "I will not hire ahead of demand",
+      "seat": "oppose"
+    },
+    {
+      "id": "q4",
+      "question": "You want a presence in a new city. Own the store or find a partner?",
+      "source_id": "s9",
+      "subject_said": "I would rather find a local partner than open our own store",
+      "seat": "oppose"
+    },
+    {
+      "id": "q5",
+      "question": "What is the part of a partnership you cannot verify?",
+      "source_id": "s9",
+      "subject_said": "a partner's numbers are not mine to see",
+      "seat": "oppose"
+    },
+    {
+      "id": "q6",
+      "question": "What number decides whether a store opens?",
+      "source_id": "s1",
+      "subject_said": "below 1,200 a store never reaches breakeven",
+      "seat": "evidence"
+    },
+    {
+      "id": "q7",
+      "question": "What has to be in hand before you sign for a site?",
+      "source_id": "s1",
+      "subject_said": "I will not sign anything before I have that figure for the specific site",
+      "seat": "evidence"
+    },
+    {
+      "id": "q8",
+      "question": "What do you require before agreeing to a meeting?",
+      "source_id": "s5",
+      "subject_said": "I do not take a meeting without the previous quarter's numbers in front of me",
+      "seat": "evidence"
+    },
+    {
+      "id": "q9",
+      "question": "A deal is stuck. What is the first thing you ask?",
+      "source_id": "s5",
+      "subject_said": "how long it has been stalled",
+      "seat": "decompose"
+    },
+    {
+      "id": "q10",
+      "question": "Someone brings you a plan. Where do you look first?",
+      "source_id": "s5",
+      "subject_said": "I look for the step that has never been done before",
+      "seat": "decompose"
+    },
+    {
+      "id": "q11",
+      "question": "Why own the store rather than licence the name?",
+      "source_id": "s1",
+      "subject_said": "owning the site is the only way to hold the standard",
+      "seat": "decompose"
+    },
+    {
+      "id": "q12",
+      "question": "What did you believe about ownership, before you changed your mind?",
+      "source_id": "s9",
+      "subject_said": "I used to think ownership was the only way to hold a standard",
+      "seat": "decompose"
+    }
+  ]
+}

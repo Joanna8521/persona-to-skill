@@ -11,6 +11,17 @@
     "kind": "post"
   },
   {
+    "id": "s5",
+    "text": "A few habits I have not managed to drop. The question I ask first is how long it has been stalled, because a deal that moved last week is a different animal from one that has not moved in two months. I do not take a meeting without the previous quarter's numbers in front of me. When someone brings me a plan, I look for the step that has never been done before, and I make them cost that step on its own. And I will not hire ahead of demand: it reads as confidence and it is the cheapest way to go broke slowly.",
+    "platform": "example-blog",
+    "url": "https://example.invalid/posts/habits-i-have-not-dropped",
+    "retrieved_at": "2026-11-27",
+    "published": "2025-01-20",
+    "authorship": "self_written",
+    "author": "A. Example",
+    "kind": "post"
+  },
+  {
     "id": "s9",
     "text": "Something I have changed my mind about. These days I would rather find a local partner than open our own store. I used to think ownership was the only way to hold a standard. I have not worked out how to square that with the cost-per-store rule, because a partner's numbers are not mine to see.",
     "platform": "example-blog",
