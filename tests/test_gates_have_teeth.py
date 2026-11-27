@@ -20,20 +20,30 @@ import tempfile
 from pathlib import Path
 
 import _base  # noqa: F401
-from persona_to_skill import contract, gates
+from persona_to_skill import contract
+from persona_to_skill.extract import contradictions, profile, seats, sensitivity
 from persona_to_skill.gates import anchor, consent, disclosure, holdout, interrogation
 
 
 def _discovered_gates():
     """Read the gate list off the package rather than hardcoding it.
 
+    Discovery walks the whole package, so the stage B record validators are
+    found alongside the G-numbered gates. They are gates in the sense that
+    matters: a non-passing verdict stops delivery.
+
     A hardcoded list is the fail-open version of this file: add a gate, forget
     to add it here, and the coverage test below goes green while the new gate
     ships unguarded. That happened once, with G5.
     """
+    import persona_to_skill
     found = {}
-    for mod in pkgutil.iter_modules(gates.__path__):
-        m = importlib.import_module(f"persona_to_skill.gates.{mod.name}")
+    for mod in pkgutil.walk_packages(persona_to_skill.__path__,
+                                     prefix="persona_to_skill."):
+        try:
+            m = importlib.import_module(mod.name)
+        except ImportError:
+            continue
         name = getattr(m, "GATE", None)
         if name and callable(getattr(m, "check", None)):
             found[name] = m
@@ -66,6 +76,24 @@ GOOD_MEMO = {
     "confidence": {"level": 0.6, "rationale": "why"}, "next_actions": ["n"],
 }
 GOOD_STATEMENTS = [{"id": "f1", "class": "FACT", "text": "plain", "source_id": "s1"}]
+
+from persona_to_skill.contract import SEAT_ENTRY_ORDER, SEATS  # noqa: E402
+
+_ENTRY = {"claim": "walks away past 60 days", "source_id": "s1", "quote": "q"}
+GOOD_BUNDLE = {
+    "seats": {"oppose": {"premortem": [dict(_ENTRY)]}},
+    "entry_order": list(SEAT_ENTRY_ORDER),
+    "unfilled_seats_acknowledged": [s for s in SEATS if s != "oppose"],
+}
+_SIDE = {"claim": "x", "source_id": "s1", "quote": "q"}
+GOOD_CONTRADICTION = [{"id": "c1", "earlier": dict(_SIDE), "later": dict(_SIDE),
+                       "status": "reconciled",
+                       "reconciling_condition": "above 20m population"}]
+GOOD_SENSITIVITY = [{"id": "f1", "decision_class": "market entry",
+                     "quantity": "cost per store", "threshold": "under 1,200",
+                     "direction": "above_stops", "source_id": "s1",
+                     "known": False, "how_to_find": "run one store for a quarter"}]
+GOOD_PROFILE = {"oppose": [{"aligned": True, "baseline_aligned": False}] * 5}
 
 
 # Each entry: a call that MUST be rejected, and why it must be.
@@ -129,6 +157,36 @@ BROKEN = [
          GOOD_STATEMENTS)),
     ("G5-interrogation", "an empty conflicts field",
      lambda: interrogation.check(GOOD_MEMO | {"conflicts": []}, GOOD_STATEMENTS)),
+
+    ("B-seats", "a bundle that volunteers the support seat",
+     lambda: seats.check(GOOD_BUNDLE | {
+         "entry_order": ["decompose", "support"] + list(SEAT_ENTRY_ORDER[1:])})),
+    ("B-seats", "a seat entry with no source and no inference marker",
+     lambda: seats.check({**GOOD_BUNDLE,
+                          "seats": {"oppose": {"premortem": [{"claim": "bare"}]}}})),
+    ("B-seats", "unfilled seats the bundle does not acknowledge",
+     lambda: seats.check({k: v for k, v in GOOD_BUNDLE.items()
+                          if k != "unfilled_seats_acknowledged"})),
+
+    ("B-contradictions", "a contradiction resolved by taking the later side",
+     lambda: contradictions.check([GOOD_CONTRADICTION[0] | {"resolution": "latest"}])),
+    ("B-contradictions", "a reconciled contradiction with no condition",
+     lambda: contradictions.check([GOOD_CONTRADICTION[0] | {"reconciling_condition": ""}])),
+    ("B-contradictions", "no records at all, not even an empty list",
+     lambda: contradictions.check(None)),
+
+    ("B-sensitivity", "a threshold with no number in it",
+     lambda: sensitivity.check([GOOD_SENSITIVITY[0] | {"threshold": "acceptably low"}])),
+    ("B-sensitivity", "a quantity that names a topic rather than a measurement",
+     lambda: sensitivity.check([GOOD_SENSITIVITY[0] | {"quantity": "market conditions"}])),
+    ("B-sensitivity", "no flip conditions extracted at all",
+     lambda: sensitivity.check([])),
+
+    ("B-profile", "a profile where no seat beats the baseline",
+     lambda: profile.check({"synthesise": [{"aligned": True,
+                                            "baseline_aligned": True}] * 20})),
+    ("B-profile", "no per-seat holdout supplied",
+     lambda: profile.check(None)),
 ]
 
 
@@ -151,8 +209,9 @@ def test_every_gate_is_covered_by_this_file():
 
 
 def test_discovery_found_every_gate_module():
-    assert len(GATES) >= 5, f"discovered only {GATES}"
-    for mod in (consent, anchor, disclosure, holdout, interrogation):
+    assert len(GATES) >= 9, f"discovered only {GATES}"
+    for mod in (consent, anchor, disclosure, holdout, interrogation,
+                seats, contradictions, sensitivity, profile):
         assert mod.GATE in GATE_MODULES
 
 
@@ -164,6 +223,10 @@ def test_every_gate_rejects_its_missing_input():
     assert not disclosure.check("", "A. Example", "PUBLISHED", {}).passed
     assert not holdout.check(None).passed
     assert not interrogation.check(None, None).passed
+    assert not seats.check(None).passed
+    assert not contradictions.check(None).passed
+    assert not sensitivity.check(None).passed
+    assert not profile.check(None).passed
 
 
 def test_a_clean_input_still_passes():
@@ -179,6 +242,10 @@ def test_a_clean_input_still_passes():
                             {k: "set" for k in contract.DISCLOSURE_REQUIRED_KEYS}).passed
     assert holdout.check([{"aligned": True, "baseline_aligned": False}] * 10).passed
     assert interrogation.check(GOOD_MEMO, GOOD_STATEMENTS).passed
+    assert seats.check(GOOD_BUNDLE).passed
+    assert contradictions.check(GOOD_CONTRADICTION).passed
+    assert sensitivity.check(GOOD_SENSITIVITY).passed
+    assert profile.check(GOOD_PROFILE).passed
 
 
 def test_frozen_thresholds_are_not_relaxed():

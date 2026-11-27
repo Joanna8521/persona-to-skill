@@ -327,6 +327,94 @@ THRESHOLD_NUMBER = re.compile(r"\d")
 # scrolls back to check what it stands on.
 ASSUMPTION_STATUSES = ("verified", "unverified", "unverifiable")
 
+# ---------------------------------------------------------------- the seats
+# What a reconstruction extracts is not what the subject concluded, it is how
+# they get to a conclusion. A cited conclusion is still a conclusion: an
+# adviser who walks in and says "looks fine" is useless whether or not the
+# sentence has a footnote. So extraction is organised by the seats a
+# deliberation has, and each seat is defined by what the subject does in it.
+#
+# These are seats in a method, not a transcript of one. A subject who never
+# deliberated out loud still occupies them; the corpus just has less to say
+# about some.
+SEATS = {
+    "decompose": "拆解",
+    "support": "支持",
+    "oppose": "反對",
+    "evidence": "證據",
+    "crosscheck": "交叉檢核",
+    "synthesise": "統整",
+    "interrogate": "拷問",
+}
+
+# What each seat owes. A seat with nothing recorded is not a seat the subject
+# lacks, it is a seat the corpus could not fill, and the two are reported
+# differently: see extract.seats.
+SEAT_OBLIGATIONS = {
+    "decompose": ("first_question", "options_added", "framing_refused"),
+    "support": ("strongest_case", "conditions_that_favour"),
+    "oppose": ("premortem", "underestimated", "refusals"),
+    "evidence": ("demanded_before_acting", "treated_as_fact", "treated_as_inference"),
+    "crosscheck": ("conflicts_sought", "sensitivity_question"),
+    "synthesise": ("weighting", "confidence_calibration"),
+    "interrogate": ("self_attacks", "independence_check"),
+}
+
+# ADVERSARIAL BY DEFAULT.
+#
+# The dangerous case is not a user with no view. It is a user who already has
+# an answer and wants it confirmed, holding a reconstruction of someone they
+# admire: it agrees, in a voice they trust, and agreement from that voice does
+# not read as flattery, it reads as confirmation.
+#
+# So a reconstruction leads with the oppose seat. The support seat is reachable
+# but never volunteered, and the deliverable is what this subject would object
+# to rather than what they would advise. The test of an answer is that it
+# survives the objections, not that it collects an endorsement.
+SEAT_ENTRY_ORDER = ("decompose", "oppose", "evidence", "crosscheck",
+                    "synthesise", "interrogate")
+SEATS_ON_REQUEST_ONLY = ("support",)
+
+# A contradiction is the find, not the problem.
+#
+# Someone who argued one thing in 2021 and the opposite in 2024 has rarely
+# reversed. Usually an unstated condition changed, and recovering that
+# condition is the most valuable thing in a reconstruction, because it is a
+# criterion the subject has never spelled out. So every contradiction record
+# has to answer what condition makes both sides true.
+#
+# Fail-closed: where no condition can be found the record stays UNRESOLVED and
+# is reported as worth digging into. Taking the newer side and moving on throws
+# the find away, which is why "pick the latest" is not an available outcome.
+CONTRADICTION_REQUIRED_FIELDS = (
+    "earlier", "later", "reconciling_condition", "status",
+)
+CONTRADICTION_STATUSES = ("reconciled", "unresolved")
+
+# The flip condition, and why it is the highest-value output.
+#
+# Hesitation is usually not disagreement, it is a missing number. What a
+# practitioner is worth, for a class of decision, is knowing WHICH quantity
+# decides it and roughly where the line sits. That is a bounded, checkable
+# claim, unlike "thinks like X".
+#
+# A threshold must contain a number (THRESHOLD_NUMBER), which puts it under
+# G2's figure check: a threshold cannot be invented without the corpus
+# containing it.
+SENSITIVITY_REQUIRED_FIELDS = (
+    "decision_class", "quantity", "threshold", "direction", "source_id",
+)
+
+# Reported per seat, never as one number.
+#
+# A subject is usually distinctive in one or two seats and generic in the rest:
+# someone who has watched things fail has a strong oppose seat, someone who
+# knows which figures lie has a strong evidence seat, and their decompose seat
+# may be ordinary. A single score hides that. A per-seat profile lets the
+# reconstruction claim only the seats it earned, which is both honest and more
+# useful: the reader knows where to trust it.
+SEAT_PROFILE_VERDICTS = ("distinctive", "generic", "unfilled")
+
 # ----------------------------------------------------------- punctuation scope
 # House rule: Chinese text uses full-width punctuation. English does not, and
 # the English README is the canonical one, so the punctuation gate must not run
@@ -391,6 +479,14 @@ FROZEN = (
     "THRESHOLD_NUMBER",
     "PUNCT_CHECKED_SUFFIXES",
     "PUNCT_CHECKED_DIRS",
+    "SEATS",
+    "SEAT_OBLIGATIONS",
+    "SEAT_ENTRY_ORDER",
+    "SEATS_ON_REQUEST_ONLY",
+    "CONTRADICTION_REQUIRED_FIELDS",
+    "CONTRADICTION_STATUSES",
+    "SENSITIVITY_REQUIRED_FIELDS",
+    "SEAT_PROFILE_VERDICTS",
 )
 
 # Policy stated in prose. No code reads these for a decision, and the same test
