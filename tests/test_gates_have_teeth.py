@@ -20,6 +20,7 @@ import tempfile
 from pathlib import Path
 
 import _base  # noqa: F401
+import persona_to_skill
 from persona_to_skill import contract
 from persona_to_skill.extract import contradictions, profile, seats, sensitivity
 from persona_to_skill.gates import anchor, consent, disclosure, holdout, interrogation
@@ -36,7 +37,6 @@ def _discovered_gates():
     to add it here, and the coverage test below goes green while the new gate
     ships unguarded. That happened once, with G5.
     """
-    import persona_to_skill
     found = {}
     for mod in pkgutil.walk_packages(persona_to_skill.__path__,
                                      prefix="persona_to_skill."):

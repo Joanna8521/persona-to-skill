@@ -59,8 +59,9 @@ def entry_errors(seat: str, field: str, i: int, item: Any) -> List[str]:
         return [f"{where}: no claim"]
 
     if item.get("attribution") == "inference":
-        if not item.get("derived_from"):
-            return [f"{where}: marked as inference but names nothing it was derived from"]
+        missing = [k for k in _INFERRED if not item.get(k)]
+        if missing:
+            return [f"{where}: marked as inference but missing {', '.join(missing)}"]
         return []
 
     missing = [k for k in _ANCHORED if not str(item.get(k, "")).strip()]

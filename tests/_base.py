@@ -9,7 +9,14 @@ if str(ROOT) not in sys.path:
 
 
 def run_module(namespace):
-    """Run every test_* callable in `namespace` when executed as a script."""
+    """Run every test_* callable in `namespace` when executed as a script.
+
+    Forces UTF-8 first. Several tests here are named in Chinese, and printing
+    those names on a Windows console raised UnicodeEncodeError, which failed
+    the run for a reason that had nothing to do with any test.
+    """
+    from persona_to_skill._console import force_utf8
+    force_utf8()
     failures = []
     tests = sorted(k for k, v in namespace.items() if k.startswith("test_") and callable(v))
     for name in tests:
