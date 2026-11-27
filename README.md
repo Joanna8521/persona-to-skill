@@ -38,10 +38,23 @@ Two consequences, and they are the whole design:
 1. **Every attributed claim names a source and quotes it**, and the quote is
    verified against the source file on disk. Not "probably said something like
    this" — the passage, or the claim does not ship.
-2. **The skill is scored on questions held back from extraction.** Questions
-   the subject has publicly answered, that the pipeline never saw. Alignment on
-   held-back material is the only evidence a method transferred rather than a
-   mannerism. The default gate is 80%.
+2. **The skill is scored on questions a generic model gets wrong.** Questions
+   the subject has publicly answered, held back from extraction, and split by a
+   recorded baseline: the same question answered with no reconstruction loaded
+   at all.
+
+   Most of what any practitioner says out loud is consensus, and a
+   reconstruction answers those questions correctly whether or not it learned
+   anything. Scored in one pool, five right out of ten that matter plus forty
+   consensus answers reads as 90%. So the consensus pool is reported and never
+   gated, and the gate reads the divergent pool: the questions where the
+   default answer is wrong, and only judgement that actually carried across can
+   be right. The default is 80% there, which is lift over baseline measured
+   directly rather than subtracted.
+
+   The honest consequence, which the gate states rather than hides: a subject
+   whose public positions are all consensus cannot be meaningfully
+   reconstructed.
 
 ## What it produces
 
@@ -50,7 +63,7 @@ reconstructions/<slug>/
 ├── SKILL.md              Decision rules, with a source anchor on every claim
 ├── decision-table.md     Situation → what they ask first → criteria → what they refuse
 ├── refusals.md           The conditions under which they say no
-├── positions-changed.md  Views they have revised, newest first
+├── contradictions.md     Where they contradict themselves, and what reconciles it
 ├── sources.json          Every source: tier, date, retrieval provenance
 └── holdout-report.md     Alignment, divergences, and what stayed unknown
 ```
@@ -59,9 +72,16 @@ reconstructions/<slug>/
 practitioner's positive claims; almost nobody can guess the conditions under
 which they decline. That is the part that behaves like a fingerprint.
 
-`positions-changed.md` exists because people change their minds and corpora do
-not. Citing a view someone has publicly abandoned is the fastest way to
-discredit an advisor built this way.
+`contradictions.md` treats a contradiction as the find, not the problem.
+Someone who argued one thing in 2021 and the opposite in 2024 has rarely
+reversed: usually an unstated condition changed, and recovering that condition
+is the most valuable thing in the whole reconstruction, because it is a
+criterion the subject has never spelled out. So every entry has to answer what
+condition makes both true, and where no condition can be found the entry stays
+open and flagged. Picking the newer one and moving on throws the find away.
+
+It also keeps an advisor from citing a view its subject has publicly abandoned,
+which is the fastest way to discredit one.
 
 ## Source tiers
 
@@ -76,6 +96,59 @@ Assigned per document, not per project.
 
 T3 is a category, not a threshold. No consent record and no output scope
 unlocks it.
+
+## Video, and what a transcript is
+
+For many subjects most of the public material is video, so collection has to
+handle captions. Two things about that are measured rather than assumed, and
+both were found by running against a real human-written transcript of a talk,
+427 cues.
+
+**Captions are segmented by display timing, not by sentence.** In that
+transcript only 59% of cues ended on sentence punctuation, so two in five
+quotes drawn across a cue boundary would have failed `G2-anchor` for a reason
+that has nothing to do with misquoting: the quote spanned a boundary the
+storage invented. Cues are joined before storage.
+
+**A transcript carries other people's words.** That same transcript stored
+"(Audience) Good." inline, two cues after the speaker's own first sentence.
+Left undifferentiated, another person's words become quotable as the subject's,
+and `G2-anchor` would pass such a quote correctly, because the words really are
+in the source. That is misattribution produced by the storage.
+
+So speaker turns are detected and tagged, and the tagging fails towards
+*unknown*. Detection is heuristic and cannot be otherwise, since Chinese and
+Japanese carry no case and "我覺得：" is shaped exactly like an attribution. A
+turn is the subject's only when the label matches the subject, somebody else's
+only when the label says so outright, and unknown otherwise, surfaced for a
+person to resolve. Guessing either way loses: guess "subject" and another
+person's words become quotable as theirs, guess "other" and the subject's own
+words are dropped.
+
+Non-subject turns are kept, because they are context rather than
+contamination. "Not always." says nothing without the question before it, and
+material where the subject is pushed is the most informative material there is,
+so each subject turn records what prompted it.
+
+### Anchorability is measured, not taken on trust
+
+The shortcut is to read YouTube's `trackKind`, which marks a track `ASR` or
+`standard`, and treat `ASR` as weaker. Do not. Whether editing an
+auto-generated track reclassifies it is not documented anywhere we could find,
+so the label may say "automatic" about a track someone corrected line by line.
+It is recorded and decides nothing.
+
+The stored text is measured instead, on sentence-ending punctuation and
+sentence casing. Across ~190k characters of real human-written text in two
+languages the density ran 1.02 to 1.85 marks per hundred characters, and the
+same texts stripped measured exactly 0.00, so the bar sits in a gap nothing
+lands in.
+
+Be precise about what that buys. It establishes **anchorability**: text with
+sentence boundaries can support quote reconciliation, an unpunctuated stream
+cannot, because there is nothing to quote between. It does **not** establish
+human review, since current speech recognition punctuates its own output.
+Reading `anchorable` as "a person checked this" reads more than is there.
 
 ## Output scope
 
@@ -122,7 +195,7 @@ Stated plainly so the tool is not read as offering what it cannot:
 
 ## Gates
 
-Four, each with negative tests that must go red on a deliberately broken input.
+Five, each with negative tests that must go red on a deliberately broken input.
 A gate that cannot fail is worse than no gate, because it grants false
 confidence.
 
@@ -131,10 +204,22 @@ confidence.
 | `G1-consent` | T3 present; T0 without a consent record; untiered or unreadable sources |
 | `G2-anchor` | A quote absent from its source; a figure the source does not contain; a claim with no source |
 | `G3-disclosure` | Impersonation when published; an incomplete disclosure block |
-| `G4-holdout` | Alignment below 80%; fewer than 10 scored items; over 30% unobserved |
+| `G4-holdout` | Divergent-pool alignment below 80%; fewer than 5 divergent items; missing baselines; over 30% unobserved |
+| `G5-interrogation` | A memo field left unanswered; a claim called fact with no source or with hedging; a committing verdict while the deciding number is unknown; confidence that contradicts the open evidence gaps |
 
 Each gate recomputes independently, fails closed when an input it depends on is
 missing, and reads the artifact actually being delivered rather than a fixture.
+
+`G5-interrogation` exists because the things that go wrong in a deliberation
+hide in fluent prose: an unsourced claim written as established fact, a
+recommendation quietly resting on an assumption nobody verified, a hedge
+standing where "I do not know" belongs. The more polished the output, the more
+it needs that pass. Two of its rules carry most of the weight. A verdict that
+commits to a decision is unavailable while the quantity that decides it is
+still unknown, because what is missing then is a number rather than an opinion.
+And a stated confidence has to cohere with the open evidence gaps in both
+directions: high confidence alongside a gap that bears on the decision is
+incoherent, and so is low confidence with nothing missing.
 
 `G4-holdout` treats **unknown as a first-class state**. An item with no recorded
 observation is not a pass and not a failure: it leaves the denominator and is
