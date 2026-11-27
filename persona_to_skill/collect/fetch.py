@@ -75,16 +75,26 @@ class Decision:
         return self.verdict == FETCH
 
 
-IMPORT_ROUTES = (
+_ROUTE_EXPORT = (
     "Export your data from the platform. Works anywhere, needs no tooling, and "
     "for the subject's own private material it is the only unambiguously clean "
-    "route.",
+    "route."
+)
+_ROUTE_COLLECTOR = (
     "Run your own collector. It acts under your credentials and your acceptance "
     "of the platform's terms, which is where that responsibility belongs. Note "
     "what the tool needs: a browser extension needs that browser, so it is not "
-    "a route for everybody.",
-    "Paste or upload the text. Works anywhere, needs nothing, scales badly.",
+    "a route for everybody."
 )
+_ROUTE_PASTE = (
+    "Paste or upload the text. Works anywhere, needs nothing, scales badly."
+)
+
+# Named one at a time rather than written inline, because inside a tuple a
+# wrapped string and a missing comma look identical. A comma lost between two
+# of these would silently make three routes into two, and a refused fetch
+# would offer the reader one fewer way forward.
+IMPORT_ROUTES = (_ROUTE_EXPORT, _ROUTE_COLLECTOR, _ROUTE_PASTE)
 
 
 def decide(url: str, robots_txt: Optional[str]) -> Decision:
@@ -124,8 +134,9 @@ def content_type_ok(content_type: Optional[str]) -> Tuple[bool, str]:
         return False, "no content type declared"
     base = content_type.split(";")[0].strip().lower()
     if base not in ALLOWED_CONTENT_TYPES:
-        return False, (f"content type {base!r} is not text. This reads prose and "
-                       "captions; a binary body is a cost an attacker can choose.")
+        why = (f"content type {base!r} is not text. This reads prose and "
+               f"captions; a binary body is a cost an attacker can choose.")
+        return False, why
     return True, base
 
 

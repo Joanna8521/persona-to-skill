@@ -266,6 +266,48 @@ def test_the_punctuation_gate_actually_exists_now():
 
 
 
+def test_no_multiline_strings_inside_a_list_literal():
+    """A wrapped string and a missing comma look identical.
+
+    CodeQL raised six of these on eval/report.py, where paragraphs of prose
+    were written as multi-line implicit concatenations inside the `lines`
+    list. It was right, and the hazard is the silent kind: a stray comma turns
+    one entry into two, a missing one merges two into one, and neither raises
+    anything. The output just comes out subtly different.
+
+    It is not only multi-element containers. A single-element
+    `return [\"...\" \"...\"]` with a comma slipped in becomes two error lines
+    where there was one, which is the same silent change.
+
+    `fetch.py`'s IMPORT_ROUTES was the clearest case: a comma lost between two
+    of its three routes would have made three into two, and a refused fetch
+    would have offered the reader one fewer way forward.
+
+    The fix throughout was to name the string above the literal, which also
+    made the prose easier to find than it was buried in a list.
+    """
+    offenders = []
+    for f in PKG + TESTS:
+        tree = ast.parse(f.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if not isinstance(node, (ast.List, ast.Tuple, ast.Set)):
+                continue
+            for el in node.elts:
+                if not isinstance(el, (ast.Constant, ast.JoinedStr)):
+                    continue
+                if isinstance(el, ast.Constant) and not isinstance(el.value, str):
+                    continue
+                if (el.end_lineno or el.lineno) > el.lineno:
+                    offenders.append(f"{f.relative_to(ROOT)}:{el.lineno}")
+
+    assert not offenders, (
+        "strings spanning more than one line inside a list, tuple or set "
+        f"literal: {offenders}. A wrapped string and a missing comma look the "
+        "same there. Name the string above the literal and reference it, or "
+        "build it in a small function."
+    )
+
+
 def test_no_absolute_paths_outside_the_repo():
     """An absolute path is correct on the machine it was written on.
 

@@ -41,6 +41,39 @@ FILES = (
 )
 
 
+# ── the prose each rendered file opens with ─────────────
+#
+# Named rather than written inline. Inside a list a wrapped string and a
+# missing comma look identical: a stray comma turns one paragraph into two
+# list entries, a missing one merges two into one, and neither raises
+# anything. These paragraphs are the first thing a reader of the delivered
+# skill sees, so they are also the ones a silent change would most affect.
+
+WHY_REFUSALS = (
+    "Anyone can paraphrase a practitioner's positive claims. Almost nobody can "
+    "guess the conditions under which they decline, which is why this file "
+    "behaves like a fingerprint.\n"
+)
+
+WHY_CONTRADICTIONS = (
+    "A contradiction is the find, not the problem. Someone who argued one thing "
+    "and later the opposite has rarely reversed: usually an unstated condition "
+    "changed, and that condition is a criterion they have never spelled out "
+    "anywhere, so nobody can quote it.\n"
+)
+
+WHY_SENSITIVITY = (
+    "Most hesitation is not disagreement, it is a missing number. For each class "
+    "of decision below, one quantity decides the answer. Where the number is not "
+    "in hand, the next step is to go and find it.\n"
+)
+
+WHY_HOLDOUT = (
+    "Questions this subject answered in public, held back from extraction, and "
+    "split by a recorded baseline: the same question answered with no "
+    "reconstruction loaded.\n"
+)
+
 def _name(bundle: Dict[str, Any]) -> str:
     return str((bundle.get("subject") or {}).get("name") or "the subject")
 
@@ -153,10 +186,7 @@ def decision_table_md(bundle: Dict[str, Any]) -> str:
 def refusals_md(bundle: Dict[str, Any]) -> str:
     name = _name(bundle)
     items = _entries(bundle, "oppose", "refusals")
-    out = [f"# {name}: what they refuse\n",
-           ("Anyone can paraphrase a practitioner's positive claims. Almost nobody can "
-            "guess the conditions under which they decline, which is why this file "
-            "behaves like a fingerprint.\n"),
+    out = [f"# {name}: what they refuse\n", WHY_REFUSALS,
            _bullets(items), ""]
     pm = _entries(bundle, "oppose", "premortem")
     if pm:
@@ -168,11 +198,7 @@ def refusals_md(bundle: Dict[str, Any]) -> str:
 def contradictions_md(bundle: Dict[str, Any]) -> str:
     name = _name(bundle)
     records = bundle.get("contradictions") or []
-    out = [f"# {name}: contradictions\n",
-           "A contradiction is the find, not the problem. Someone who argued one thing "
-           "and later the opposite has rarely reversed: usually an unstated condition "
-           "changed, and that condition is a criterion they have never spelled out "
-           "anywhere, so nobody can quote it.\n"]
+    out = [f"# {name}: contradictions\n", WHY_CONTRADICTIONS]
     if not records:
         out.append("None found in this corpus.\n")
         return "\n".join(out)
@@ -203,10 +229,7 @@ def sensitivity_md(bundle: Dict[str, Any]) -> str:
     records = list(bundle.get("sensitivity") or [])
     # Not in hand first: those are the ones the reader can act on alone.
     records.sort(key=lambda r: bool(r.get("known")))
-    out = [f"# {name}: what decides it\n",
-           "Most hesitation is not disagreement, it is a missing number. For each class "
-           "of decision below, one quantity decides the answer. Where the number is not "
-           "in hand, the next step is to go and find it.\n"]
+    out = [f"# {name}: what decides it\n", WHY_SENSITIVITY]
     for r in records:
         out.append(f"## {r.get('decision_class')}\n")
         out.append(f"- Quantity: **{r.get('quantity')}**")
@@ -241,10 +264,7 @@ def holdout_report_md(bundle: Dict[str, Any]) -> str:
     s = holdout_gate.score(items)
     prof = profile_mod.build(bundle.get("holdout_by_seat") or {})
 
-    out = [f"# {name}: holdout report\n",
-           ("Questions this subject answered in public, held back from extraction, and "
-            "split by a recorded baseline: the same question answered with no "
-            "reconstruction loaded.\n"),
+    out = [f"# {name}: holdout report\n", WHY_HOLDOUT,
            "| | Count |", "|---|---|",
            f"| Divergent pool, aligned | {s['divergent']['aligned']} |",
            f"| Divergent pool, diverged | {s['divergent']['diverged']} |",

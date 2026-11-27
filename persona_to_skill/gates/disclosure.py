@@ -60,8 +60,9 @@ def check(skill_text: str, subject_name: str, scope: str,
     warnings: List[str] = []
 
     if scope not in OUTPUT_SCOPES:
-        return Verdict(GATE, False, [f"unknown output scope {scope!r}; "
-                                     f"expected one of {list(OUTPUT_SCOPES)}"])
+        why = (f"unknown output scope {scope!r}; "
+               f"expected one of {list(OUTPUT_SCOPES)}")
+        return Verdict(GATE, False, [why])
     if not skill_text or not skill_text.strip():
         return Verdict(GATE, False, ["no skill text supplied; nothing to check"])
     if not subject_name or not subject_name.strip():

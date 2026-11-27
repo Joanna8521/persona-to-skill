@@ -52,6 +52,12 @@ GATE = "G4-holdout"
 UNKNOWN = "unknown"
 
 
+NO_HOLDOUT_SET = (
+    "no holdout set supplied. This gate cannot be skipped: without held-back "
+    "questions there is no evidence the reconstruction captured a method "
+    "rather than a voice."
+)
+
 def _observation(value: Any) -> Any:
     """Keep explicit booleans; everything else stays UNKNOWN.
 
@@ -133,9 +139,7 @@ def check(items: List[Dict[str, Any]] | None) -> Verdict:
     if items is None:
         return Verdict(
             GATE, False,
-            ["no holdout set supplied. This gate cannot be skipped: without held-back "
-             "questions there is no evidence the reconstruction captured a method "
-             "rather than a voice."],
+            [NO_HOLDOUT_SET],
         )
     if not items:
         return Verdict(GATE, False, ["holdout set is empty"])

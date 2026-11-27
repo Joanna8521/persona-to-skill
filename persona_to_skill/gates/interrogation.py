@@ -57,6 +57,17 @@ from . import Verdict
 GATE = "G5-interrogation"
 
 
+# A function rather than a constant, because it interpolates. Named either
+# way: inside a list a wrapped string and a missing comma look identical.
+def no_classified_statements() -> str:
+    return (
+        "no classified statements supplied. Every claim in the memo must carry "
+        f"one of {list(STATEMENT_CLASSES)}; without that breakdown the "
+        "unsourced-fact and hidden-assumption checks cannot run, and the traps "
+        "they catch are the ones that hide in fluent prose."
+    )
+
+
 def _empty(value: Any) -> bool:
     if value is None:
         return True
@@ -120,10 +131,7 @@ def check(memo: Dict[str, Any] | None,
         # pass here would report on a memo whose prose was never examined.
         return Verdict(
             GATE, False,
-            ["no classified statements supplied. Every claim in the memo must carry one "
-             f"of {list(STATEMENT_CLASSES)}; without that breakdown the unsourced-fact "
-             "and hidden-assumption checks cannot run, and the traps they catch are the "
-             "ones that hide in fluent prose."],
+            [no_classified_statements()],
         )
 
     errors: List[str] = []

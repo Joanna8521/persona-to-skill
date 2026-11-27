@@ -41,6 +41,14 @@ _VAGUE = (
 )
 
 
+NO_FLIP_CONDITIONS = (
+    "no flip conditions extracted. This is the output that turns a decision "
+    "someone is stuck on into one lookup they can do themselves; a "
+    "reconstruction without any has not found what it was looking for. If the "
+    "corpus never shows the subject naming a deciding quantity, say so in the "
+    "unfilled-seat report rather than leaving this empty."
+)
+
 def _vague_hits(text: str) -> List[str]:
     low = text.lower()
     return [v for v in _VAGUE if v.lower() in low]
@@ -61,11 +69,7 @@ def check(records: List[Dict[str, Any]] | None) -> Verdict:
         return Verdict(GATE, False, ["sensitivity records must be a list"])
     if not records:
         return Verdict(GATE, False, [
-            "no flip conditions extracted. This is the output that turns a decision "
-            "someone is stuck on into one lookup they can do themselves; a reconstruction "
-            "without any has not found what it was looking for. If the corpus never shows "
-            "the subject naming a deciding quantity, say so in the unfilled-seat report "
-            "rather than leaving this empty."])
+            NO_FLIP_CONDITIONS])
 
     errors: List[str] = []
     warnings: List[str] = []

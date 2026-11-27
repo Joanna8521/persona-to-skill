@@ -67,11 +67,12 @@ def entry_errors(seat: str, field: str, i: int, item: Any) -> List[str]:
 
     missing = [k for k in _ANCHORED if not str(item.get(k, "")).strip()]
     if missing:
-        return [
-            f"{where}: attributed to the subject but missing {', '.join(missing)}. "
-            "Either anchor it in the corpus, or mark it "
+        why = (
+            f"{where}: attributed to the subject but missing "
+            f"{', '.join(missing)}. Either anchor it in the corpus, or mark it "
             '{"attribution": "inference", "derived_from": [...]}'
-        ]
+        )
+        return [why]
     return []
 
 

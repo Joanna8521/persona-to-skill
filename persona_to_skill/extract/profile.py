@@ -49,6 +49,11 @@ DISTINCTIVE, GENERIC, UNFILLED = SEAT_PROFILE_VERDICTS
 MIN_DIVERGENT_PER_SEAT = 3
 
 
+NO_PER_SEAT_HOLDOUT = (
+    "no per-seat holdout supplied. A single figure averages away the thing a "
+    "reader needs: which seats this reconstruction earned."
+)
+
 def _observation(value: Any) -> Optional[bool]:
     """Explicit booleans only. bool is a subclass of int, so a JSON true would
     pass a naive integer check and be counted."""
@@ -114,8 +119,7 @@ def check(holdout_by_seat: Dict[str, List[Dict[str, Any]]] | None) -> Verdict:
     """
     if holdout_by_seat is None:
         return Verdict(GATE, False, [
-            "no per-seat holdout supplied. A single figure averages away the thing a "
-            "reader needs: which seats this reconstruction earned."])
+            NO_PER_SEAT_HOLDOUT])
     if not isinstance(holdout_by_seat, dict):
         return Verdict(GATE, False, ["per-seat holdout must be a mapping of seat to items"])
 

@@ -209,9 +209,11 @@ def run(bundle: Dict[str, Any], corpus_dir: str | Path,
 
     version = str(bundle.get("version") or "").strip()
     if not version:
-        return None, verdicts, [
-            "bundle has no version. The filename carries it, so that a user holding "
-            "three downloads can tell which is current."]
+        no_version = (
+            "bundle has no version. The filename carries it, so that a user "
+            "holding three downloads can tell which is current."
+        )
+        return None, verdicts, [no_version]
     label = version if version.startswith("v") else f"v{version}"
     inner = f"{slug(bundle)}-method"
     out_path = out_dir / f"{inner}-{label}.zip"

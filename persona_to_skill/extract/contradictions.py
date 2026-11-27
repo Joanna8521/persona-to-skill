@@ -39,13 +39,23 @@ GATE = "B-contradictions"
 _SIDE_FIELDS = ("claim", "source_id", "quote")
 
 
+# Named rather than written inline. Inside a list a wrapped string and a
+# missing comma look identical, and a stray comma here would turn one error
+# into two, each half a sentence.
+NOT_EVEN_AN_EMPTY_LIST = (
+    "no contradiction records supplied, not even an empty list. "
+    "Finding none is a result; not having looked is not."
+)
+
 def _side_errors(label: str, side: Any) -> List[str]:
     if not isinstance(side, dict):
         return [f"{label}: must be an object with {list(_SIDE_FIELDS)}"]
     missing = [k for k in _SIDE_FIELDS if not str(side.get(k, "")).strip()]
     if missing:
-        return [f"{label}: missing {', '.join(missing)}. Both sides of a contradiction "
-                "are quotes, or there is no contradiction to reconcile."]
+        why = (f"{label}: missing {', '.join(missing)}. Both sides of a "
+               f"contradiction are quotes, or there is no contradiction to "
+               f"reconcile.")
+        return [why]
     return []
 
 
@@ -58,8 +68,7 @@ def check(records: List[Dict[str, Any]] | None) -> Verdict:
     """
     if records is None:
         return Verdict(GATE, False, [
-            "no contradiction records supplied, not even an empty list. "
-            "Finding none is a result; not having looked is not."])
+            NOT_EVEN_AN_EMPTY_LIST])
     if not isinstance(records, (list, tuple)):
         return Verdict(GATE, False, ["contradiction records must be a list"])
 
