@@ -76,8 +76,12 @@ CONSENT_REQUIRED_FIELDS = (
 #
 # UNKNOWN is a first-class state. An unobserved result is never counted as a
 # pass and never as a failure -- it is excluded from the denominator and
-# reported separately. This follows book-to-skill's tools/evals/score.py, which
-# refuses to derive missing observations.
+# reported separately.
+#
+# The alternative corrupts the only number that matters. Score an unobserved
+# item as a failure and a thin question set reads as a bad reconstruction;
+# score it as a pass and the gate flatters whatever it could not check. Both
+# answers are invented. Carrying the gap forward is the only honest option.
 HOLDOUT_MIN_ALIGNMENT = 0.80
 
 # A high UNKNOWN rate is a defect in the holdout question set, not in the

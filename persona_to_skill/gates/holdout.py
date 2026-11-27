@@ -10,12 +10,15 @@ actually said. Alignment on held-back material is evidence the method
 transferred. Alignment on material the skill was built from is evidence of
 nothing, which is why this gate refuses to score items flagged as seen.
 
-UNKNOWN is a first-class state, following book-to-skill's tools/evals/score.py.
-An item with no recorded observation is not a pass and not a failure: it leaves
-the denominator and is reported on its own. Note that `bool` is a subclass of
-`int` in Python, so a JSON `true` would satisfy a naive isinstance(x, int)
-check and then be summed as 1 -- inventing a score this module promises never
-to estimate.
+UNKNOWN is a first-class state. An item with no recorded observation is not a
+pass and not a failure: it leaves the denominator and is reported on its own.
+Scoring it either way would invent the measurement -- as a failure it slanders
+a reconstruction for a thin question set, as a pass it flatters one for a check
+that never ran.
+
+Note that `bool` is a subclass of `int` in Python, so a JSON `true` would
+satisfy a naive isinstance(x, int) check and then be summed as 1, inventing a
+score this module promises never to estimate.
 """
 from __future__ import annotations
 
