@@ -7,7 +7,7 @@ name = "persona-to-skill"
 version = "0.1.0"
 description = "Reconstruct a documented method as an agent skill, with receipts."
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = "Apache-2.0"
 keywords = ["agent-skills", "claude", "llm", "provenance", "citations"]
 classifiers = [
