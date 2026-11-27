@@ -586,6 +586,10 @@ PROVISIONAL = {
     "MAX_SOURCE_BYTES":
         "measure the largest genuine public corpus for one subject; the limit "
         "only has to sit above that",
+    "DEFAULT_CRAWL_DELAY_S":
+        "nothing to measure here, only to respect: it applies when robots.txt "
+        "names no crawl-delay, so it stays until a site complains or a "
+        "convention settles",
 }
 
 # Policy stated in prose. No code reads these for a decision, and the same test
