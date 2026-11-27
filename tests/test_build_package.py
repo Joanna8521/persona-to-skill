@@ -11,7 +11,7 @@ import zipfile
 from pathlib import Path
 
 import _base  # noqa: F401
-from persona_to_skill.build import package, render
+from persona_to_skill.deliver import package, render
 from persona_to_skill.contract import SEAT_ENTRY_ORDER, SEATS
 
 CORPUS = {

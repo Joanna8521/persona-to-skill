@@ -103,6 +103,47 @@ def test_no_ci_step_swallows_its_own_failure():
             assert "|| true" not in body, f"{wf.name}: step {m.group(1)!r} swallows failure"
 
 
+def test_every_source_file_is_tracked_by_git():
+    """Source that exists locally and is not in the repository is the same
+    family: something looks complete and is not.
+
+    It happened. `.gitignore` carried an unanchored `build/`, which also
+    matched `persona_to_skill/build/`, so `git add -A` skipped a whole
+    subpackage in silence. The commit described work it did not contain, every
+    test passed locally, and CI on four platforms was the only thing that
+    noticed, several minutes later. The subpackage is now called `deliver` and
+    the pattern is anchored, but the class needs a guard rather than a memory.
+    """
+    import subprocess
+
+    tracked = set(subprocess.run(
+        ["git", "ls-files", "persona_to_skill", "tests", "experiments"],
+        cwd=ROOT, capture_output=True, text=True, check=True).stdout.split())
+    on_disk = {
+        p.relative_to(ROOT).as_posix()
+        for d in ("persona_to_skill", "tests", "experiments")
+        for p in (ROOT / d).rglob("*.py")
+        if "__pycache__" not in p.parts
+    }
+    untracked = sorted(on_disk - tracked)
+    assert not untracked, (
+        "Python source present on disk and not in the repository:\n  "
+        + "\n  ".join(untracked)
+        + "\nCheck .gitignore for an unanchored pattern; `git add -A` skips these "
+          "without saying so.")
+
+
+def test_gitignore_patterns_that_should_be_anchored_are():
+    """`build/` matches at every level, not only the root. The same is true of
+    `dist/`, and of anything else named after a conventional output directory
+    that could also be a legitimate package name."""
+    lines = [ln.strip() for ln in (ROOT / ".gitignore").read_text(encoding="utf-8").splitlines()]
+    for pattern in ("build/", "dist/", "docs/", "lib/", "src/", "test/"):
+        assert pattern not in lines, (
+            f"{pattern!r} in .gitignore is unanchored, so it also matches "
+            f"persona_to_skill/{pattern}. Write /{pattern} to mean the root only.")
+
+
 def test_no_except_clause_swallows_silently():
     """`except ...: pass` with nothing said is the same family as an unwired
     contract value: something is being discarded and the reader cannot tell
