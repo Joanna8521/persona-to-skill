@@ -2,7 +2,13 @@
   "name": "persona-to-skill",
   "version": "0.1.0",
   "description": "Pointer package: persona-to-skill is a Python tool, installed with pip. This exists so the name resolves to the real project.",
-  "keywords": ["agent", "skill", "provenance", "citation", "gates"],
+  "keywords": [
+    "agent",
+    "skill",
+    "provenance",
+    "citation",
+    "gates"
+  ],
   "homepage": "https://joanna8521.github.io/persona-to-skill/",
   "bugs": {
     "url": "https://github.com/Joanna8521/persona-to-skill/issues"
@@ -18,7 +24,8 @@
   },
   "files": [
     "bin",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "engines": {
     "node": ">=18"
