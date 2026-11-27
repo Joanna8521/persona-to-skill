@@ -60,6 +60,12 @@ def _corpus():
     return d
 
 
+def _book_corpus():
+    d = Path(tempfile.mkdtemp())
+    (d / "s1.txt").write_text("I walk away rather than discount.", encoding="utf-8")
+    return d
+
+
 def _consent(data):
     f = tempfile.NamedTemporaryFile("w", suffix=".json", delete=False, encoding="utf-8")
     json.dump(data, f)
@@ -102,12 +108,20 @@ BROKEN = [
      lambda: consent.check([{"id": "s1", "tier": "T0"}])),
     ("G1-consent", "a source with no tier",
      lambda: consent.check([{"id": "mystery"}])),
+    ("G1-consent", "a source with no authorship recorded",
+     lambda: consent.check([{"id": "b1", "tier": "T2"}])),
     ("G2-anchor", "a quote that is not in its source",
      lambda: anchor.check(
          [{"id": "c", "text": "x", "source_id": "s1", "quote": "he definitely said this"}],
          _corpus())),
     ("G2-anchor", "an attributed claim naming no source",
      lambda: anchor.check([{"id": "c", "text": "He always walks away."}], _corpus())),
+    ("G2-anchor", "a ghostwritten source quoted as the subject's own words",
+     lambda: anchor.check(
+         [{"id": "c", "text": "x", "source_id": "s1",
+           "quote": "I walk away rather than discount"}],
+         _book_corpus(),
+         [{"id": "s1", "tier": "T2", "authorship": "ghostwritten"}])),
     ("G2-anchor", "no corpus to verify against",
      lambda: anchor.check([{"id": "c", "text": "x", "source_id": "s1", "quote": "y"}],
                           Path("/nonexistent"))),
@@ -172,6 +186,11 @@ BROKEN = [
      lambda: contradictions.check([GOOD_CONTRADICTION[0] | {"reconciling_condition": ""}])),
     ("B-contradictions", "no records at all, not even an empty list",
      lambda: contradictions.check(None)),
+    ("B-contradictions", "unresolved contradictions past the point of being dig sites",
+     lambda: contradictions.check(
+         [{"id": f"u{i}", "earlier": dict(_SIDE), "later": dict(_SIDE),
+           "status": "unresolved", "reconciling_condition": "",
+           "why_unresolved": "nothing found"} for i in range(20)])),
 
     ("B-sensitivity", "a threshold with no number in it",
      lambda: sensitivity.check([GOOD_SENSITIVITY[0] | {"threshold": "acceptably low"}])),
@@ -231,7 +250,13 @@ def test_a_clean_input_still_passes():
     """The gates must discriminate, not merely refuse everything."""
     d = Path(tempfile.mkdtemp())
     (d / "s1.txt").write_text("I walk away rather than discount.", encoding="utf-8")
-    assert consent.check([{"id": "s1", "tier": "T1"}]).passed
+    assert consent.check([{"id": "s1", "tier": "T1",
+                           "authorship": "self_written"}]).passed
+    assert anchor.check(
+        [{"id": "c", "text": "x", "source_id": "s1",
+          "quote": "I walk away rather than discount", "attributed_to_source": True}],
+        _book_corpus(),
+        [{"id": "s1", "tier": "T2", "authorship": "ghostwritten"}]).passed
     assert anchor.check(
         [{"id": "c", "text": "Walks away.", "source_id": "s1",
           "quote": "I walk away rather than discount"}], d).passed

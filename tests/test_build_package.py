@@ -75,7 +75,8 @@ def bundle(**over):
             "quote": "Below 1,200 a store never reaches breakeven",
             "known": False, "how_to_find": "run one store for a quarter",
         }],
-        "sources": [{"id": "s1", "tier": "T1"}, {"id": "s9", "tier": "T1"}],
+        "sources": [{"id": "s1", "tier": "T1", "authorship": "self_written"},
+                    {"id": "s9", "tier": "T1", "authorship": "self_written"}],
         "holdout": [{"aligned": True, "baseline_aligned": False}] * 12,
         "holdout_by_seat": {
             "oppose": [{"aligned": True, "baseline_aligned": False}] * 5,

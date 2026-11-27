@@ -26,7 +26,12 @@ from __future__ import annotations
 
 from typing import Any, Dict, List
 
-from ..contract import CONTRADICTION_REQUIRED_FIELDS, CONTRADICTION_STATUSES
+from ..contract import (
+    CONTRADICTION_MAX_UNRESOLVED_RATIO,
+    CONTRADICTION_REQUIRED_FIELDS,
+    CONTRADICTION_STATUSES,
+    CONTRADICTION_UNRESOLVED_RATIO_FLOOR,
+)
 from ..gates import Verdict
 
 GATE = "B-contradictions"
@@ -109,11 +114,33 @@ def check(records: List[Dict[str, Any]] | None) -> Verdict:
                 "valuable thing here, and it has just been thrown away. Mark the record "
                 "unresolved instead and say what you tried.")
 
-    if unresolved:
+    total = reconciled + unresolved
+    ratio = (unresolved / total) if total else None
+
+    # "Unresolved is the intended outcome" is true at three and false at three
+    # hundred. A corpus full of positions no condition reconciles is itself the
+    # finding: the stance moves as a tactic rather than with circumstances, and
+    # there may be no reconstructible method here. Producing hundreds of "worth
+    # digging into" entries and calling that normal is the failure.
+    #
+    # The floor is there because the ratio is meaningless on a handful: two of
+    # three unresolved is 67% and says nothing.
+    if (total >= CONTRADICTION_UNRESOLVED_RATIO_FLOOR
+            and ratio is not None and ratio > CONTRADICTION_MAX_UNRESOLVED_RATIO):
+        errors.append(
+            f"{unresolved} of {total} contradictions ({ratio:.0%}) have no reconciling "
+            f"condition, above {CONTRADICTION_MAX_UNRESOLVED_RATIO:.0%}. At this rate the "
+            "unresolved ones are not dig sites, they are the result: positions that no "
+            "condition reconciles suggest a stance that moves as a tactic rather than "
+            "with circumstances, and there may be no reconstructible method here. Report "
+            "that rather than shipping a list of things to look into.")
+    elif unresolved:
         warnings.append(
-            f"{unresolved} contradiction(s) unresolved and flagged for digging. "
-            "That is the intended outcome when no condition can be found, not a failure.")
+            f"{unresolved} of {total} contradiction(s) unresolved and flagged for "
+            "digging. At this rate that is the intended outcome when no condition can be "
+            "found, not a failure.")
 
     return Verdict(GATE, not errors, errors, warnings,
                    {"records": len(records), "reconciled": reconciled,
-                    "unresolved": unresolved})
+                    "unresolved": unresolved,
+                    "unresolved_ratio": None if ratio is None else round(ratio, 3)})

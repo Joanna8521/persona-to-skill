@@ -17,6 +17,7 @@ import unicodedata
 from pathlib import Path
 from typing import Any, Dict, List
 
+from ..contract import AUTHORSHIP_NOT_OWN_WORDS
 from . import Verdict
 
 GATE = "G2-anchor"
@@ -126,13 +127,22 @@ def _digits(text: str) -> List[str]:
     return [m.group(0).replace(",", "").replace("_", "") for m in _NUM.finditer(text)]
 
 
-def check(claims: List[Dict[str, Any]], corpus_dir: Path) -> Verdict:
+def check(claims: List[Dict[str, Any]], corpus_dir: Path,
+          sources: List[Dict[str, Any]] | None = None) -> Verdict:
     """Reconcile `claims` against the corpus on disk.
 
     Each claim needs: `text` (what is being asserted), `source_id`, and `quote`
     (the passage it rests on). A claim may instead be marked
     `attribution: "inference"`, which exempts it from the quote check but
     requires the output to label it as an inference -- G3 checks that label.
+
+    `sources`, when given, carries each source's authorship. A quote can match
+    its source exactly and still not be the subject's own words: The Art of the
+    Deal is credited to Trump and was written by Tony Schwartz, who has said so
+    publicly. So a claim resting on a source that is ghostwritten, co-authored,
+    institutional or translated must set `attributed_to_source: true`, which
+    makes the honest form available ("the book published under their name says
+    X") and refuses the dishonest one ("they said X").
     """
     errors: List[str] = []
     warnings: List[str] = []
@@ -183,7 +193,9 @@ def check(claims: List[Dict[str, Any]], corpus_dir: Path) -> Verdict:
             break
         return cache[source_id]
 
-    checked = inferences = 0
+    authorship = {str(s.get("id")): s.get("authorship")
+                  for s in (sources or []) if s.get("id")}
+    checked = inferences = not_own_words = 0
     for i, claim in enumerate(claims):
         label = claim.get("id") or f"<claim #{i}>"
         if claim.get("attribution") == "inference":
@@ -205,6 +217,17 @@ def check(claims: List[Dict[str, Any]], corpus_dir: Path) -> Verdict:
             continue
 
         checked += 1
+
+        author = authorship.get(str(sid))
+        if author in AUTHORSHIP_NOT_OWN_WORDS:
+            not_own_words += 1
+            if not claim.get("attributed_to_source"):
+                errors.append(
+                    f"{label}: source {sid} is {author}, so the quote matched is not the "
+                    "subject's own words. Set attributed_to_source: true and phrase the "
+                    "claim as what the source says, not as what the subject said."
+                )
+
         if _normalize(str(quote)) not in body:
             # Distinguish the one near-miss that is a real integrity problem
             # from a quote that simply is not there.
@@ -240,5 +263,6 @@ def check(claims: List[Dict[str, Any]], corpus_dir: Path) -> Verdict:
         not errors,
         errors,
         warnings,
-        {"claims": len(claims), "quote_checked": checked, "inferences": inferences},
+        {"claims": len(claims), "quote_checked": checked, "inferences": inferences,
+         "not_the_subjects_own_words": not_own_words},
     )

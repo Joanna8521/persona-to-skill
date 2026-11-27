@@ -327,6 +327,38 @@ THRESHOLD_NUMBER = re.compile(r"\d")
 # scrolls back to check what it stands on.
 ASSUMPTION_STATUSES = ("verified", "unverified", "unverifiable")
 
+# ------------------------------------------------------------- who wrote it
+# Provenance and authorship are orthogonal and must not be conflated.
+# Provenance asks how this text came to exist (published prose, a transcript,
+# OCR). Authorship asks whose words these are. A ghostwritten book is published
+# prose that the subject did not write; a transcript is the subject's own words
+# written down by a machine.
+#
+# G2 verifies that a quote appears in the source it names. It cannot verify
+# that the source's author is the subject, and that gap is not hypothetical:
+# The Art of the Deal is credited to Trump and was written by Tony Schwartz,
+# who has said so publicly. A quote from it matches the source exactly and is
+# still not the subject's own words.
+AUTHORSHIP_KINDS = (
+    "self_written",     # the subject wrote or spoke it
+    "ghostwritten",     # published under their name, written by someone else
+    "co_authored",      # shared, so a given sentence cannot be assigned
+    "institutional",    # a company or campaign statement in their name
+    "translated",       # the words matched are the translator's
+    "unknown",          # not established
+)
+
+# Authorship that makes a quote something other than the subject's own words.
+# A claim resting on one of these has to say so: the honest form is "the book
+# published under their name says X", not "they said X".
+AUTHORSHIP_NOT_OWN_WORDS = ("ghostwritten", "co_authored", "institutional", "translated")
+
+# `unknown` warns rather than blocks, and the reason is practical rather than
+# principled: for most sources authorship cannot be established from outside,
+# so blocking on it would make the pipeline unusable and push people towards
+# declaring self_written to get past the gate. A gate that is routinely lied to
+# is worse than one that reports a gap.
+
 # ---------------------------------------------------------------- the seats
 # What a reconstruction extracts is not what the subject concluded, it is how
 # they get to a conclusion. A cited conclusion is still a conclusion: an
@@ -391,6 +423,23 @@ SEATS_ON_REQUEST_ONLY = ("support",)
 CONTRADICTION_REQUIRED_FIELDS = (
     "earlier", "later", "reconciling_condition", "status",
 )
+
+# When unresolved contradictions stop being dig sites and start being the
+# finding.
+#
+# "Unresolved is the intended outcome" is true at three and false at three
+# hundred. A corpus full of positions that no condition reconciles is itself
+# the result: the subject's stance moves as a tactic rather than with
+# circumstances, and there may be no reconstructible method to find. Producing
+# hundreds of "worth digging into" entries and calling that normal is the
+# failure.
+#
+# PROVISIONAL. Both numbers are guesses. Nothing here has been run against a
+# corpus with a real contradiction count, and the ratio is the more meaningful
+# of the two while being unstable on small corpora, which is why there is a
+# floor as well. Measure before freezing: see PROVISIONAL below.
+CONTRADICTION_MAX_UNRESOLVED_RATIO = 0.60
+CONTRADICTION_UNRESOLVED_RATIO_FLOOR = 8
 CONTRADICTION_STATUSES = ("reconciled", "unresolved")
 
 # The flip condition, and why it is the highest-value output.
@@ -461,8 +510,6 @@ FROZEN = (
     "CONSENT_REQUIRED_FIELDS",
     "HOLDOUT_MIN_ALIGNMENT",
     "HOLDOUT_MAX_UNKNOWN_RATIO",
-    "HOLDOUT_MIN_ITEMS",
-    "HOLDOUT_MIN_DIVERGENT_ITEMS",
     "IMPERSONATION_PATTERNS",
     "IMPERSONATION_RATIONALE_PRIVATE",
     "DISCLOSURE_REQUIRED_KEYS",
@@ -471,8 +518,6 @@ FROZEN = (
     "MEMO_EMPTIABLE_FIELDS",
     "VERDICTS",
     "VERDICTS_REQUIRING_FLIP_CONDITION_KNOWN",
-    "CONFIDENCE_REQUIRING_NO_GAPS",
-    "CONFIDENCE_REQUIRING_GAPS_NAMED",
     "GAP_PERIPHERAL_KEY",
     "EVASION_PHRASES",
     "HEDGE_MARKERS",
@@ -485,11 +530,43 @@ FROZEN = (
     "SEAT_OBLIGATIONS",
     "SEAT_ENTRY_ORDER",
     "SEATS_ON_REQUEST_ONLY",
+    "AUTHORSHIP_KINDS",
+    "AUTHORSHIP_NOT_OWN_WORDS",
     "CONTRADICTION_REQUIRED_FIELDS",
     "CONTRADICTION_STATUSES",
     "SENSITIVITY_REQUIRED_FIELDS",
     "SEAT_PROFILE_VERDICTS",
 )
+
+# Read by code, and not yet justified by measurement.
+#
+# A number in FROZEN says "this was measured or argued, and changing it needs a
+# version bump". Several numbers here were neither: they were picked because
+# something had to go in the slot. Leaving them in FROZEN borrowed an authority
+# they had not earned, and the frozen-contract machinery exists to protect
+# decisions that were actually made.
+#
+# So they sit here, each with what would settle it. Changing one needs no
+# version bump, because there is nothing yet to be faithful to. Moving one into
+# FROZEN needs a measurement, the way MIN_SENTENCE_DENSITY was set from 190k
+# characters of real text and HOLDOUT folding was set from a corpus experiment.
+PROVISIONAL = {
+    "HOLDOUT_MIN_ITEMS":
+        "run holdout sets of varying size and find where the alignment figure "
+        "stops moving with one more question",
+    "HOLDOUT_MIN_DIVERGENT_ITEMS":
+        "same, on the divergent slice only, which is where the gate reads",
+    "CONFIDENCE_REQUIRING_NO_GAPS":
+        "collect memos people actually wrote and find the confidence level "
+        "above which an open gap reads as incoherent to a reader",
+    "CONFIDENCE_REQUIRING_GAPS_NAMED":
+        "same question from the other side",
+    "CONTRADICTION_MAX_UNRESOLVED_RATIO":
+        "reconstruct several subjects and compare the unresolved ratio against "
+        "whether a usable method came out",
+    "CONTRADICTION_UNRESOLVED_RATIO_FLOOR":
+        "find the corpus size below which the ratio is noise",
+}
 
 # Policy stated in prose. No code reads these for a decision, and the same test
 # asserts they are NOT in FROZEN, so the distinction cannot quietly collapse.

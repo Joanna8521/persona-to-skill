@@ -106,7 +106,10 @@ def run_gates(bundle: Dict[str, Any], corpus_dir: Path,
                            "text": f"{rec.get('quantity')} {rec.get('threshold')}",
                            "source_id": rec.get("source_id"), "quote": rec.get("quote")})
     if claims:
-        verdicts.append(anchor_gate.check(claims, corpus_dir))
+        # The source manifest goes with the claims: G2 is the gate that knows
+        # which source a claim rests on, so it is where authorship has its
+        # consequence.
+        verdicts.append(anchor_gate.check(claims, corpus_dir, bundle.get("sources")))
 
     # G3 reads the rendered SKILL.md, because that is the text that could
     # impersonate and the text a reader sees.

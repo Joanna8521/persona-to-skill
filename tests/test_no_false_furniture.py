@@ -31,7 +31,8 @@ def _contract_names():
     return [t.id for n in ast.parse(src).body if isinstance(n, ast.Assign)
             for t in n.targets
             if isinstance(t, ast.Name) and t.id.isupper()
-            and t.id not in ("FROZEN", "DECLARED", "CONTRACT_VERSION")]
+            and t.id not in ("FROZEN", "PROVISIONAL", "DECLARED",
+                             "CONTRACT_VERSION")]
 
 
 def _refs(name, paths, skip="contract.py"):
@@ -39,24 +40,51 @@ def _refs(name, paths, skip="contract.py"):
                for p in paths if p.name != skip)
 
 
+def _tiers():
+    return (("FROZEN", contract.FROZEN), ("PROVISIONAL", contract.PROVISIONAL),
+            ("DECLARED", contract.DECLARED))
+
+
 def test_every_contract_value_is_classified():
-    """A value belongs in FROZEN or in DECLARED. Neither is not an option: an
-    unclassified value is one nobody has decided is enforced."""
+    """Three tiers, and a value belongs to exactly one.
+
+    FROZEN was measured or argued and changing it needs a version bump.
+    PROVISIONAL is read by code and the number is still a guess, so it carries
+    what would settle it and changing it needs nothing. DECLARED is prose that
+    no code reads. An unclassified value is one nobody has decided about, which
+    is how four guessed thresholds came to sit in FROZEN borrowing an authority
+    they had not earned."""
     unclassified = [n for n in _contract_names()
-                    if n not in contract.FROZEN and n not in contract.DECLARED]
+                    if not any(n in group for _, group in _tiers())]
     assert not unclassified, f"unclassified contract values: {unclassified}"
 
 
-def test_frozen_and_declared_name_only_real_values():
+def test_no_contract_value_is_in_two_tiers():
+    names = _contract_names()
+    for n in names:
+        where = [label for label, group in _tiers() if n in group]
+        assert len(where) <= 1, f"{n} is in {where}; the tiers mean different things"
+
+
+def test_every_provisional_value_says_what_would_settle_it():
+    """A guess is allowed. A guess with no route out of being a guess is how it
+    quietly becomes permanent."""
+    for name, how in contract.PROVISIONAL.items():
+        assert how and len(how) > 20, f"{name} has no account of what would settle it"
+
+
+def test_provisional_values_are_read_by_production_code():
+    """Same rule as FROZEN: a value nothing consults is furniture whatever tier
+    it sits in."""
+    unwired = [n for n in contract.PROVISIONAL if _refs(n, PKG) == 0]
+    assert not unwired, f"provisional value(s) read by no production code: {unwired}"
+
+
+def test_no_tier_names_a_value_that_does_not_exist():
     defined = set(_contract_names())
-    for tup, label in ((contract.FROZEN, "FROZEN"), (contract.DECLARED, "DECLARED")):
-        ghosts = [n for n in tup if n not in defined]
+    for label, group in _tiers():
+        ghosts = [n for n in group if n not in defined]
         assert not ghosts, f"{label} names values that do not exist: {ghosts}"
-
-
-def test_frozen_and_declared_do_not_overlap():
-    both = set(contract.FROZEN) & set(contract.DECLARED)
-    assert not both, f"a value cannot be both enforced and declared prose: {both}"
 
 
 def test_every_frozen_value_is_read_by_production_code():

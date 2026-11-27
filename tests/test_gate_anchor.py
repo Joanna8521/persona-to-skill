@@ -266,6 +266,62 @@ def test_an_ordinary_source_id_still_reads():
                           "quote": "I walk away rather than discount"}], d).passed
 
 
+
+# ---------------------------------------------------------------------------
+# A quote can match its source exactly and still not be the subject's words
+# ---------------------------------------------------------------------------
+
+GHOST = [{"id": "b1", "tier": "T2", "authorship": "ghostwritten"}]
+OWN = [{"id": "b1", "tier": "T2", "authorship": "self_written"}]
+
+
+def _book():
+    d = Path(tempfile.mkdtemp())
+    (d / "b1.txt").write_text("The deal is about leverage.", encoding="utf-8")
+    return d
+
+
+def _claim(**over):
+    c = {"id": "c1", "text": "Deals are about leverage.", "source_id": "b1",
+         "quote": "The deal is about leverage"}
+    c.update(over)
+    return c
+
+
+def test_a_ghostwritten_source_cannot_be_quoted_as_the_subjects_words():
+    v = anchor.check([_claim()], _book(), GHOST)
+    assert not v.passed
+    assert any("not the\n" not in e and "own words" in e for e in v.errors)
+
+
+def test_flagging_it_as_the_sources_words_is_accepted():
+    """The honest form stays available: what the book published under their name
+    says, rather than what they said."""
+    v = anchor.check([_claim(attributed_to_source=True)], _book(), GHOST)
+    assert v.passed, v.errors
+    assert v.stats["not_the_subjects_own_words"] == 1
+
+
+def test_every_authorship_that_is_not_their_own_words_requires_the_flag():
+    from persona_to_skill.contract import AUTHORSHIP_NOT_OWN_WORDS
+    for kind in AUTHORSHIP_NOT_OWN_WORDS:
+        srcs = [{"id": "b1", "tier": "T2", "authorship": kind}]
+        assert not anchor.check([_claim()], _book(), srcs).passed, kind
+        assert anchor.check([_claim(attributed_to_source=True)], _book(), srcs).passed
+
+
+def test_self_written_and_unknown_need_no_flag():
+    assert anchor.check([_claim()], _book(), OWN).passed
+    unknown = [{"id": "b1", "tier": "T2", "authorship": "unknown"}]
+    assert anchor.check([_claim()], _book(), unknown).passed
+
+
+def test_omitting_the_source_manifest_keeps_the_old_behaviour():
+    """G2 is still callable without it; authorship is then simply not checked
+    rather than assumed."""
+    assert anchor.check([_claim()], _book()).passed
+
+
 if __name__ == "__main__":
     import sys
     sys.exit(_base.run_module(dict(globals())))

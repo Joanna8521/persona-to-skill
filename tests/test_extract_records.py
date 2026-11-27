@@ -142,6 +142,48 @@ def test_必填欄位缺一個就擋():
         assert not se.check([flip(**{field: ""})]).passed, field
 
 
+
+# ======================================================= 矛盾量
+def _batch(unresolved, reconciled):
+    out = []
+    for i in range(unresolved):
+        out.append(rec(id=f"u{i}", status="unresolved",
+                       reconciling_condition="", why_unresolved="查不到市場規模"))
+    for i in range(reconciled):
+        out.append(rec(id=f"r{i}"))
+    return out
+
+
+def test_大量未解矛盾本身就是結論而不是待辦清單():
+    """「未解是預期結果」在三筆是對的，在三百筆是錯的。沒有條件能和解的立場
+    堆成一片，說的是立場隨策略變動而不是隨情境變動，那種情況下可重建的方法
+    可能不存在。"""
+    v = co.check(_batch(200, 10))
+    assert not v.passed
+    assert any("they are the result" in e for e in v.errors)
+
+
+def test_比例在下限以下不擋因為它沒有意義():
+    """三筆裡兩筆未解是 67%，而那個數字什麼都沒說。"""
+    v = co.check(_batch(2, 1))
+    assert v.passed, v.errors
+
+
+def test_剛好跨過比例門檻就擋():
+    assert co.check(_batch(5, 5)).passed          # 50%
+    assert not co.check(_batch(7, 3)).passed      # 70%
+
+
+def test_比例寫進_stats():
+    assert co.check(_batch(7, 3)).stats["unresolved_ratio"] == 0.7
+
+
+def test_少量未解仍然只給警告並說那是預期的():
+    v = co.check(_batch(2, 6))
+    assert v.passed
+    assert any("intended outcome" in w for w in v.warnings)
+
+
 if __name__ == "__main__":
     import sys
     sys.exit(_base.run_module(dict(globals())))

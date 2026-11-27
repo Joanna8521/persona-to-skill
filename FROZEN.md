@@ -6,6 +6,75 @@ here, never an in-place edit. `tests/test_contract_frozen.py` asserts them.
 
 ## v0.1.0 (unreleased)
 
+### A third tier: PROVISIONAL
+
+Four numbers sat in FROZEN having been picked because something had to go in
+the slot. Leaving them there borrowed an authority they had not earned, and the
+frozen-contract machinery exists to protect decisions that were actually made.
+
+| Tier | Means | Changing it |
+|---|---|---|
+| `FROZEN` | measured or argued | needs a version bump and an entry here |
+| `PROVISIONAL` | read by code, number still a guess | needs nothing |
+| `DECLARED` | prose no code reads | needs nothing |
+
+Each `PROVISIONAL` entry carries what would settle it, because a guess with no
+route out of being a guess is how it becomes permanent. Moved there:
+`HOLDOUT_MIN_ITEMS`, `HOLDOUT_MIN_DIVERGENT_ITEMS`,
+`CONFIDENCE_REQUIRING_NO_GAPS`, `CONFIDENCE_REQUIRING_GAPS_NAMED`. Two of the
+measured ones stay frozen and say why: `MIN_SENTENCE_DENSITY` came from 190k
+characters of real text, and the G2 foldings came from a corpus experiment.
+
+`tests/test_no_false_furniture.py` now checks all three tiers: every value in
+exactly one, every `PROVISIONAL` value read by production code and carrying its
+route out, every `DECLARED` value read by none.
+
+### Authorship, which is not provenance
+
+Added `AUTHORSHIP_KINDS` and `AUTHORSHIP_NOT_OWN_WORDS`.
+
+G2 verifies that a quote appears in the source it names. It cannot verify that
+the source's author is the subject, and the gap is not hypothetical: *The Art
+of the Deal* is credited to Trump and was written by Tony Schwartz, who has
+said so publicly. The quote matches exactly and is still not the subject's
+words.
+
+Provenance and authorship are orthogonal and were nearly conflated. Provenance
+asks how the text came to exist (published prose, transcript, OCR); authorship
+asks whose words these are. A ghostwritten book is published prose the subject
+did not write; a transcript is the subject's own words written down by a
+machine.
+
+G1 requires authorship per source, because it is a property of the source. G2
+enforces the consequence, because it is the gate that knows which source a
+claim rests on: a claim on a ghostwritten, co-authored, institutional or
+translated source must set `attributed_to_source: true`. That keeps the honest
+form available, "the book published under their name says X", and refuses
+"they said X".
+
+`unknown` warns rather than blocks, and the reason is practical. For most
+sources authorship cannot be established from outside, so blocking would make
+the pipeline unusable and push people towards declaring `self_written` to get
+past the gate. A gate people routinely lie to is worse than one that reports a
+gap.
+
+### Unresolved contradictions have an upper bound
+
+Added `CONTRADICTION_MAX_UNRESOLVED_RATIO` (0.60) and
+`CONTRADICTION_UNRESOLVED_RATIO_FLOOR` (8), both `PROVISIONAL`.
+
+"Unresolved is the intended outcome" is true at three and false at three
+hundred. A corpus full of positions no condition reconciles is itself the
+finding: the stance moves as a tactic rather than with circumstances, and there
+may be no reconstructible method to find. Shipping hundreds of entries marked
+"worth digging into" and calling that normal was the failure.
+
+The floor exists because the ratio is meaningless on a handful: two of three
+unresolved is 67% and says nothing.
+
+Both numbers are guesses and sit in `PROVISIONAL` accordingly. Nothing here has
+been run against a corpus with a real contradiction count.
+
 ### Amendment: three corrections to G5, before it ever shipped
 
 **`conflicts` is no longer emptiable.** It was listed alongside `evidence_gaps`

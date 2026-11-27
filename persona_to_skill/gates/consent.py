@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from ..contract import (
+    AUTHORSHIP_KINDS,
     CONSENT_REQUIRED_FIELDS,
     SOURCE_TIERS,
     TIERS_ALWAYS_FORBIDDEN,
@@ -45,6 +46,7 @@ def check(sources: List[Dict[str, Any]], consent_path: Optional[Path] = None) ->
 
     tier_counts: Dict[str, int] = {}
     needs_consent: List[str] = []
+    authorship_counts: Dict[str, int] = {}
 
     for i, src in enumerate(sources):
         sid = src.get("id") or f"<source #{i}>"
@@ -58,6 +60,27 @@ def check(sources: List[Dict[str, Any]], consent_path: Optional[Path] = None) ->
             continue
 
         tier_counts[tier] = tier_counts.get(tier, 0) + 1
+
+        # Authorship is a property of the source, so it is recorded here;
+        # what it forbids is checked where claims are, in G2. Provenance and
+        # authorship are orthogonal: a ghostwritten book is published prose
+        # nobody transcribed, a transcript is the subject's own words written
+        # down by a machine.
+        author = src.get("authorship")
+        if author is None:
+            errors.append(
+                f"{sid}: no authorship recorded. G2 can confirm a quote is in a source; "
+                f"it cannot tell whether the source's author is the subject. Use one of "
+                f"{list(AUTHORSHIP_KINDS)}, and \"unknown\" where it cannot be established.")
+        elif author not in AUTHORSHIP_KINDS:
+            errors.append(f"{sid}: authorship {author!r} is not one of {list(AUTHORSHIP_KINDS)}")
+        else:
+            authorship_counts[author] = authorship_counts.get(author, 0) + 1
+            if author == "unknown":
+                warnings.append(
+                    f"{sid}: authorship unknown. Claims resting on it are not blocked, "
+                    "because for most sources this cannot be established from outside, "
+                    "but nothing here establishes the words are the subject's own.")
 
         if tier in TIERS_ALWAYS_FORBIDDEN:
             errors.append(
@@ -98,5 +121,6 @@ def check(sources: List[Dict[str, Any]], consent_path: Optional[Path] = None) ->
 
     return Verdict(
         GATE, not errors, errors, warnings,
-        {"source_count": len(sources), "tier_counts": tier_counts, "t0_count": len(needs_consent)},
+        {"source_count": len(sources), "tier_counts": tier_counts,
+         "t0_count": len(needs_consent), "authorship": authorship_counts},
     )
