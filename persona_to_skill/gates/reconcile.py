@@ -144,9 +144,9 @@ def check(holdout: List[Dict[str, Any]] | None,
         return Verdict(GATE, False, [
             f"holdout must be a list of observations, not {type(holdout).__name__}"])
     if not isinstance(by_seat, dict):
-        return Verdict(GATE, False, [
-            f"holdout_by_seat must be a mapping of seat to observations, "
-            f"not {type(by_seat).__name__}"])
+        wrong_shape = ("holdout_by_seat must be a mapping of seat to "
+                       f"observations, not {type(by_seat).__name__}")
+        return Verdict(GATE, False, [wrong_shape])
     bad_seats = sorted(k for k, v in by_seat.items() if not isinstance(v, list))
     if bad_seats:
         return Verdict(GATE, False, [
