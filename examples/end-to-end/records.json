@@ -1,0 +1,24 @@
+[
+  {
+    "id": "s1",
+    "text": "People ask how I decide when to stop negotiating. I walk away from a stalled deal rather than discount. Discounting to close teaches the buyer that waiting works, and you pay for that lesson on every deal afterwards. The number I actually watch is cost per store: below 1,200 a store never reaches breakeven, so we stop. I will not sign anything before I have that figure for the specific site.",
+    "platform": "example-blog",
+    "url": "https://example.invalid/posts/when-to-stop-negotiating",
+    "retrieved_at": "2026-11-27",
+    "published": "2024-03-11",
+    "authorship": "self_written",
+    "author": "A. Example",
+    "kind": "post"
+  },
+  {
+    "id": "s9",
+    "text": "Something I have changed my mind about. These days I would rather find a local partner than open our own store. I used to think ownership was the only way to hold a standard. I have not worked out how to square that with the cost-per-store rule, because a partner's numbers are not mine to see.",
+    "platform": "example-blog",
+    "url": "https://example.invalid/posts/what-i-changed-my-mind-about",
+    "retrieved_at": "2026-11-27",
+    "published": "2025-09-02",
+    "authorship": "self_written",
+    "author": "A. Example",
+    "kind": "post"
+  }
+]

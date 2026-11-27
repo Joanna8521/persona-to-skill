@@ -226,3 +226,61 @@ def test_every_built_page_has_a_sitemap_beside_it():
         assert not missing, (
             f"{len(missing)} of {len(pages)} built pages have no sitemap "
             f"beside them, so Material will 404 on each page view: {missing}")
+
+
+# The spelling of the count in each README. A README whose pattern matches
+# nothing fails the test below, so adding a fourth language without adding its
+# spelling here is loud rather than silent.
+SUBCOMMAND_COUNT_PATTERNS = {
+    "README.md": r"\b(One|Two|Three|Four|Five|Six|Seven|Eight|Nine|Ten) subcommands\b",
+    "README.zh-TW.md": r"([一二三四五六七八九十])個子指令",
+    "README.ja.md": r"サブコマンドは\s*(\d+)\s*つ",
+}
+
+_WORDS = {
+    "one": 1, "two": 2, "three": 3, "four": 4, "five": 5,
+    "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10,
+    "一": 1, "二": 2, "三": 3, "四": 4, "五": 5,
+    "六": 6, "七": 7, "八": 8, "九": 9, "十": 10,
+}
+
+
+def _parser_subcommand_count():
+    import argparse  # noqa: PLC0415
+
+    from persona_to_skill.cli import build_parser  # noqa: PLC0415
+
+    parser = build_parser()
+    subs = [a for a in parser._actions
+            if isinstance(a, argparse._SubParsersAction)]
+    assert len(subs) == 1, "expected exactly one subparsers action"
+    return len(subs[0].choices)
+
+
+def test_every_readme_states_the_real_number_of_subcommands():
+    """Three READMEs said five after `punct` made it six.
+
+    Nothing recomputed it, so the number sat there being wrong in three
+    languages at once. A figure written in prose and never recomputed is the
+    same shape of defect as a gate that cannot fail, which is the thing this
+    repository is about: it reads as a fact and costs nothing to be wrong.
+    """
+    import re as _re  # noqa: PLC0415
+
+    expected = _parser_subcommand_count()
+    wrong = []
+    for name, pattern in SUBCOMMAND_COUNT_PATTERNS.items():
+        text = (ROOT / name).read_text(encoding="utf-8")
+        match = _re.search(pattern, text)
+        if match is None:
+            wrong.append(f"{name}: no subcommand count found at all "
+                         f"(pattern {pattern!r} matched nothing)")
+            continue
+        token = match.group(1)
+        found = _WORDS.get(token.lower(), None)
+        if found is None:
+            found = int(token) if token.isdigit() else None
+        if found != expected:
+            wrong.append(f"{name}: says {token} ({found}), parser has {expected}")
+
+    assert not wrong, "\n  ".join([""] + wrong)
