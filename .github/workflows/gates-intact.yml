@@ -44,15 +44,23 @@ jobs:
           PY
 
       - name: no gate has lost its negative tests
-        shell: bash
         run: |
-          status=0
-          for gate in consent anchor disclosure holdout; do
-            n=$(grep -c 'assert not' "tests/test_gate_${gate}.py" || true)
-            echo "${gate}: ${n} negative assertion(s)"
-            if [ "${n}" -lt 4 ]; then
-              echo "::error file=tests/test_gate_${gate}.py::fewer than 4 negative assertions; a gate without negative tests is unverified"
-              status=1
-            fi
-          done
-          exit $status
+          python - <<'PY'
+          import pathlib, re, sys
+          FLOOR = 4
+          bad = []
+          for gate in ("consent", "anchor", "disclosure", "holdout", "interrogation"):
+              f = pathlib.Path(f"tests/test_gate_{gate}.py")
+              if not f.exists():
+                  bad.append((gate, "no test file"))
+                  continue
+              n = len(re.findall(r"assert not", f.read_text(encoding="utf-8")))
+              print(f"{gate}: {n} negative assertion(s)")
+              if n < FLOOR:
+                  bad.append((gate, f"{n} < {FLOOR}"))
+          if bad:
+              for gate, why in bad:
+                  print(f"::error file=tests/test_gate_{gate}.py::{why}; "
+                        "a gate without negative tests is unverified")
+              sys.exit(1)
+          PY

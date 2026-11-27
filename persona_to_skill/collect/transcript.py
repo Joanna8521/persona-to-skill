@@ -65,18 +65,43 @@ _NON_SPEECH = re.compile(r"^\s*[\(\[（【][^)\]）】]{0,40}[\)\]）】]\s*$")
 # to the subject is context worth keeping, it just is not something the subject
 # said. Tagging lets a later stage refuse to anchor a claim about the subject
 # to a passage somebody else spoke.
+# All three patterns avoid putting \s* next to a character class that itself
+# matches whitespace. That overlap makes the same run of spaces splittable many
+# ways, and the engine tries them all before failing.
+#
+# _ARROW_SPEAKER was written with it and measured polynomial: ">>" followed by
+# spaces and no colon took 4ms at 200 characters, 19ms at 400, 80ms at 800,
+# 293ms at 1600, so roughly 290s at 50k. Caption files come from third parties.
+# CodeQL did not flag this one (it reported the exponential _VTT_VOICE), and
+# tests/test_redos.py found it by feeding every pattern its own worst case
+# rather than checking the one instance already known about.
+#
+# The names are stripped in split_speaker, so the patterns do not need to
+# absorb surrounding whitespace themselves.
 _BRACKET_SPEAKER = re.compile(
-    "^\\s*[(\uff08]\\s*(?P<who>[^)\uff09]{1,30}?)\\s*[)\uff09]\\s*(?P<rest>.+)$", re.S)
-_ARROW_SPEAKER = re.compile("^\\s*>>\\s*(?P<who>[^:\uff1a]{1,30}?)\\s*[:\uff1a]\\s*(?P<rest>.*)$", re.S)
+    "^[ \t]*[(\uff08][ \t]*(?P<who>[^)\uff09\n]{1,30}?)[)\uff09][ \t]*(?P<rest>.+)$", re.S)
+_ARROW_SPEAKER = re.compile(
+    "^[ \t]*>>[ \t]*(?P<who>[^:\uff1a\n]{1,30}?)[:\uff1a][ \t]*(?P<rest>.*)$", re.S)
 # A full-width colon carries no following space in Chinese or Japanese, so the
-# space is optional after it and required after the ASCII one -- without that
+# space is optional after it and required after the ASCII one; without that
 # asymmetry "ratio:" inside an English sentence starts matching.
 _LABEL_SPEAKER = re.compile(
-    "^\\s*(?P<who>[A-Z][A-Za-z.' -]{1,28}|[\u4e00-\u9fff]{2,10})"
-    "(?:\\s*[\uff1a]\\s*|\\s*:\\s+)(?P<rest>.*)$", re.S)
+    "^[ \t]*(?P<who>[A-Z][A-Za-z.' -]{1,28}|[\u4e00-\u9fff]{2,10})"
+    "(?:[\uff1a][ \t]*|:[ \t]+)(?P<rest>.*)$", re.S)
 
 _SPEAKER_PATTERNS = (_BRACKET_SPEAKER, _ARROW_SPEAKER, _LABEL_SPEAKER)
-_VTT_VOICE = re.compile("<v(?:\\.[^ >]*)*\\s+(?P<who>[^>]+)>", re.I)
+# <v Name>, <v.loud Name>, <v.loud.red Name>. The cue classes are
+# dot-separated, but "." is already inside [^ >], so one quantifier covers the
+# whole prefix.
+#
+# It was written as "<v(?:\.[^ >]*)*\s+..." first, which is a quantifier
+# inside a quantified group: the exponential backtracking shape. Measured on
+# "<v" followed by dots and no space, so the match is forced to fail:
+# 18 dots 11ms, 22 dots 243ms, 26 dots 2.9s. Caption files are downloaded from
+# third parties, so a forty-character file would have hung the pipeline, which
+# SECURITY.md names as a vulnerability class in this project rather than a
+# style problem. Found by CodeQL on the pull request.
+_VTT_VOICE = re.compile("<v[^ >]*\\s+(?P<who>[^>]+)>", re.I)
 
 # Labels that are never the subject speaking, whatever the subject is called.
 NON_SUBJECT_LABELS = (

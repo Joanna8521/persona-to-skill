@@ -40,6 +40,11 @@ OUTPUT_SCOPES = ("PRIVATE", "PUBLISHED")
 #                        because no reviewer will catch it for you.
 #   G4 holdout        -- quality, same reasoning. Scope-independent.
 #   G3 disclosure     -- informing a third party. The only scope-dependent gate.
+# DECLARED, not FROZEN, and the distinction is the honest one: this records a
+# design property that no code yet consults. Its proper home is the orchestrator
+# that runs the gates in order and hands `scope` only to the ones that take it,
+# which does not exist yet because stage B is not wired to packaging. When it
+# does, this moves to FROZEN and the orchestrator reads it.
 SCOPE_DEPENDENT_GATES = ("G3-disclosure",)
 
 # ---------------------------------------------------------------- source tiers
@@ -173,7 +178,7 @@ IMPERSONATION_RATIONALE_PRIVATE = (
 )
 
 # Refused in every scope. Voice and likeness sit squarely inside the statutes,
-# and this tool produces text.
+# and this tool produces text. Declared, not enforced: see the note above.
 OUT_OF_SCOPE_OUTPUTS = (
     "voice cloning or any audio rendition of the subject",
     "images, video, or avatars depicting the subject",
@@ -329,8 +334,23 @@ ASSUMPTION_STATUSES = ("verified", "unverified", "unverifiable")
 PUNCT_CHECKED_SUFFIXES = (".zh-TW.md", ".zh-CN.md")
 PUNCT_CHECKED_DIRS = ("docs/zh-TW", "docs/zh-CN")
 
-# ------------------------------------------------------------ capability limits
-# Stated plainly so the tool is not read as offering something it cannot do.
+# ---------------------------------------------------------------------------
+# DECLARED PROSE, not enforced by code
+#
+# The two tuples below are statements of policy. No gate reads them, and none
+# can: nothing here generates audio or images, so there is no output to inspect
+# for them, and no amount of checking establishes what this tool cannot do.
+#
+# They are kept in the contract so the claims live next to the code they
+# describe rather than only in a README that drifts, and they are listed in
+# DECLARED rather than FROZEN so that nobody reads an enforced guarantee into
+# them. An unenforced value sitting among enforced ones implies a check that is
+# not running, which is the failure this separation exists to prevent.
+#
+# Both are surfaced in a build's report, so they reach the reader rather than
+# sitting unread in a source file.
+# ---------------------------------------------------------------------------
+
 CAPABILITY_LIMITS = (
     "Cannot verify that a consent record is genuine; it checks structure only.",
     "Cannot establish that a source is authentic, correctly attributed, or current.",
@@ -339,26 +359,44 @@ CAPABILITY_LIMITS = (
     "Cannot detect that a subject has withdrawn consent after a build.",
 )
 
+# Every enforced contract value, enumerated. tests/test_no_false_furniture.py
+# asserts that this tuple names each one and that each is read by code outside
+# this module, so a value cannot be added here and left unwired, and cannot be
+# wired and left out.
 FROZEN = (
     "OUTPUT_SCOPES",
     "SOURCE_TIERS",
     "TIERS_ALWAYS_FORBIDDEN",
-    "SCOPE_DEPENDENT_GATES",
+    "TIERS_REQUIRING_CONSENT",
     "CONSENT_REQUIRED_FIELDS",
     "HOLDOUT_MIN_ALIGNMENT",
     "HOLDOUT_MAX_UNKNOWN_RATIO",
     "HOLDOUT_MIN_ITEMS",
     "HOLDOUT_MIN_DIVERGENT_ITEMS",
     "IMPERSONATION_PATTERNS",
+    "IMPERSONATION_RATIONALE_PRIVATE",
     "DISCLOSURE_REQUIRED_KEYS",
     "MEMO_REQUIRED_FIELDS",
     "MEMO_LOAD_BEARING_FIELDS",
+    "MEMO_EMPTIABLE_FIELDS",
     "VERDICTS",
     "VERDICTS_REQUIRING_FLIP_CONDITION_KNOWN",
     "CONFIDENCE_REQUIRING_NO_GAPS",
     "CONFIDENCE_REQUIRING_GAPS_NAMED",
-    "MEMO_EMPTIABLE_FIELDS",
     "GAP_PERIPHERAL_KEY",
     "EVASION_PHRASES",
     "HEDGE_MARKERS",
+    "STATEMENT_CLASSES",
+    "ASSUMPTION_STATUSES",
+    "THRESHOLD_NUMBER",
+    "PUNCT_CHECKED_SUFFIXES",
+    "PUNCT_CHECKED_DIRS",
+)
+
+# Policy stated in prose. No code reads these for a decision, and the same test
+# asserts they are NOT in FROZEN, so the distinction cannot quietly collapse.
+DECLARED = (
+    "CAPABILITY_LIMITS",
+    "OUT_OF_SCOPE_OUTPUTS",
+    "SCOPE_DEPENDENT_GATES",
 )

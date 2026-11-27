@@ -41,10 +41,11 @@ from ..contract import (
     ASSUMPTION_STATUSES,
     CONFIDENCE_REQUIRING_GAPS_NAMED,
     CONFIDENCE_REQUIRING_NO_GAPS,
-    GAP_PERIPHERAL_KEY,
-    MEMO_EMPTIABLE_FIELDS,
     EVASION_PHRASES,
+    GAP_PERIPHERAL_KEY,
     HEDGE_MARKERS,
+    MEMO_EMPTIABLE_FIELDS,
+    MEMO_LOAD_BEARING_FIELDS,
     MEMO_REQUIRED_FIELDS,
     STATEMENT_CLASSES,
     THRESHOLD_NUMBER,
@@ -133,10 +134,16 @@ def check(memo: Dict[str, Any] | None,
     # explicit empty value counts and a missing key does not: the skip is what
     # this has to make visible, and forcing content would only invent some.
     for key, zh in MEMO_REQUIRED_FIELDS.items():
+        # The two load-bearing fields are named as such when they are the ones
+        # missing. A memo without a flip condition or without a confidence
+        # level is not one field short, it is missing the part that makes the
+        # rest readable, and the message should not hide that among eleven
+        # others.
+        weight = " (load-bearing)" if key in MEMO_LOAD_BEARING_FIELDS else ""
         if key not in memo:
-            errors.append(f"required field {key!r} ({zh}) was never answered")
+            errors.append(f"required field {key!r} ({zh}){weight} was never answered")
         elif _empty(memo.get(key)) and key not in MEMO_EMPTIABLE_FIELDS:
-            errors.append(f"required field {key!r} ({zh}) is empty")
+            errors.append(f"required field {key!r} ({zh}){weight} is empty")
 
     # ------------------------------------------------- R2  evasion, as a floor
     # Lexical, therefore a floor rather than a detector: the list is public and
@@ -315,6 +322,8 @@ def check(memo: Dict[str, Any] | None,
             "fields_required": len(MEMO_REQUIRED_FIELDS),
             "statements": len(statements),
             "verdict": verdict_value,
+            "load_bearing_answered": sorted(
+                k for k in MEMO_LOAD_BEARING_FIELDS if not _empty(memo.get(k))),
             "confidence": level if isinstance(level, (int, float)) and not isinstance(level, bool) else None,
         },
     )
