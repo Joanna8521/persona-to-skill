@@ -107,7 +107,6 @@ def test_no_guessed_number_hides_outside_the_registry():
     """A bare numeric constant in a module is either measured, structural, or a
     guess. The guesses have to be registered; the others say what they are
     where they are defined."""
-    import re
     exempt = {
         # measured: see the module docstrings for the figures behind them
         "MIN_SENTENCE_DENSITY", "MIN_SENTENCE_CASING",
