@@ -1,9 +1,5 @@
 # 實際使用起來是什麼樣子
 
-<a href="../journey.md">English</a> ·
-<a href="../zh-TW/journey.md"><strong>繁體中文</strong></a> ·
-<a href="../ja/journey.md">日本語</a>
-
 這份文件寫在蒐集與打包階段還不存在的時候，目的是讓已經存在的閘門被接到對的位置，而不是事後再硬栓上去。
 
 ## 形狀
