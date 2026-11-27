@@ -13,7 +13,7 @@ exact thing the gates are there to prevent.
 ## Run it
 
 ```bash
-persona-to-skill import examples/end-to-end/records.json \
+rm -rf /tmp/corpus && persona-to-skill import examples/end-to-end/records.json \
   --subject "A. Example" --tier T1 --corpus /tmp/corpus
 ```
 
@@ -38,6 +38,13 @@ persona-to-skill package --corpus /tmp/corpus --out /tmp/out \
 source into the corpus directory plus a `manifest.json`. The corpus is what
 `G2-anchor` later reads quotes against, so this is the step that decides what
 counts as evidence. It accepted 5 and rejected 0.
+
+The directory is cleared first, and that is not tidiness. `import` overwrites
+the manifest but does not delete a source file a later run dropped, and
+`G2-anchor` reads the files rather than the manifest. A bundle can therefore
+anchor a quote against material no longer in its own corpus, and packaging
+fingerprints that stale file. The same shape as the stale archive below, one
+stage earlier.
 
 **`eval`** is where the holdout figure comes from. Twelve questions, each
 with the subject's own answer and the source it is in, against a recorded run
@@ -113,7 +120,7 @@ transcript that quietly drops one is not a transcript.
 |---|---|
 | `B-contradictions` | 1 of 1 unresolved and flagged for digging; at this rate that is the intended outcome, not a failure |
 | `B-profile` | only the `oppose` seat is claimable, which is a normal result worth stating plainly |
-| `G4-holdout` | the consensus pool was 86% over 7 items, reported but not gated: a model with no reconstruction also answers those |
+| `G4-holdout` | the consensus pool was 43% over 7 items, reported but not gated: a model with no reconstruction also answers those |
 | `G2-anchor` | 1 claim is marked `inference` and exempt from the quote check, "and `G3` verifies that the output labels them" |
 | `G3-disclosure` | "output contains inference labels; confirm each is attached to a claim" |
 
@@ -126,9 +133,19 @@ output. Both are being fixed separately; this example states what the tool
 does now rather than what its own warning says it does.
 
 The holdout is twelve items, five of them divergent from a no-reconstruction
-baseline, and one deliberate miss in the consensus pool. A set where the
+baseline. The reconstruction fills two seats, `oppose` and `evidence`, and
+the other five are acknowledged as unfilled: s1 and s9 simply do not contain
+a statement about what this subject asks first, or how they cross-check, so
+the bundle says so rather than inventing one.
+
+That shows up in the numbers, which is the point of keeping it. The four
+`decompose` questions are answered by a seat the corpus never filled, so the
+reconstruction does not answer them and the consensus pool drops to 43%. The
+gated figure is unaffected at 100% over 5, because none of those four is a
+question a model without the reconstruction gets wrong. A set where the
 reconstruction agrees with the subject on everything is a set that never
-asked a hard question.
+asked a hard question, and a reconstruction that scores well on a seat it
+never filled is a reconstruction that was never tested there.
 
 ## Writing this example found real bugs in the example
 
@@ -145,11 +162,19 @@ the support seat is in entry_order. It is reachable on request and never
   volunteered
 ```
 
-Three more passed all nine gates and were found in review: a contradiction
+Four more passed all nine gates and were found in review: a contradiction
 whose earlier claim was anchored to a quote that did not support it, a flip
 condition encoded `above_stops` where the source says values **below** the
-threshold stop the project, and per-seat holdout lists that totalled fifteen
-observations against a global set of twelve.
+threshold stop the project, per-seat holdout lists that totalled fifteen
+observations against a global set of twelve, and a `decompose` seat claiming
+"How long has the deal been stalled" against an s1 quote about walking away,
+when s1 contains neither "how long" nor "first" and the only source saying
+it was held-out material.
+
+That last one is the same defect twice over: a claim its own quote does not
+support, and a holdout question the reconstruction had already been given
+the answer to. The seat is unfilled now, which is what the corpus actually
+supports.
 
 That is worth more as a demonstration than a bundle that passed on the first
 try. The gates caught the first; the last three they cannot catch, and saying

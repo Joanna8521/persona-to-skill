@@ -144,23 +144,34 @@ def test_the_holdout_in_the_bundle_is_the_eval_run():
     is a gap being fixed separately; here they are derived from one list and
     this keeps them that way.
     """
+    from collections import Counter  # noqa: PLC0415
+
     bundle = json.loads((EXAMPLE / "bundle.json").read_text(encoding="utf-8"))
     run = json.loads((EXAMPLE / "eval-run.json").read_text(encoding="utf-8"))
+    manifest = json.loads(
+        (EXAMPLE / "eval-manifest.json").read_text(encoding="utf-8"))
 
     def key(item):
         return (bool(item["aligned"]), bool(item["baseline_aligned"]))
 
-    from collections import Counter  # noqa: PLC0415
-
     from_run = Counter(key(i) for i in run["items"])
     from_global = Counter(key(i) for i in bundle["holdout"])
-    from_seats = Counter(key(i) for v in bundle["holdout_by_seat"].values()
-                         for i in v)
-
     assert from_global == from_run, (
         f"bundle holdout {dict(from_global)} vs eval run {dict(from_run)}")
-    assert from_seats == from_run, (
-        f"per-seat {dict(from_seats)} vs eval run {dict(from_run)}")
+
+    # Per seat, joined on the item id. Flattening holdout_by_seat and
+    # comparing totals passed when five divergent observations were moved
+    # from oppose to evidence, which is the swap that changes which seat the
+    # packaged profile tells a reader to trust.
+    seat_of = {i["id"]: i["seat"] for i in manifest["items"]}
+    expected = {}
+    for item in run["items"]:
+        expected.setdefault(seat_of[item["id"]], Counter())[key(item)] += 1
+    actual = {seat: Counter(key(i) for i in items)
+              for seat, items in bundle["holdout_by_seat"].items()}
+    assert actual == expected, (
+        f"\n  bundle per seat: { {k: dict(v) for k, v in actual.items()} }"
+        f"\n  eval run per seat: { {k: dict(v) for k, v in expected.items()} }")
 
 
 def test_the_readme_reports_every_warning_the_run_produced():
@@ -287,6 +298,19 @@ def test_the_eval_run_and_the_package_agree():
     assert figure in evaluated.stdout, (
         f"the disclosure says {stated!r} and the harness did not print "
         f"{figure}")
+
+    # The denominator too. Checking only the percentage let "100% over 5"
+    # stand while an excluded item made the harness report 100% over four:
+    # the same figure over a sample size nothing supports.
+    divergent = sum(1 for i in bundle["holdout"] if not i["baseline_aligned"])
+    assert f"| Divergent | {divergent} |" in evaluated.stdout.replace("  ", " "), (
+        f"the bundle has {divergent} divergent observations and the harness "
+        f"did not report that many")
+    import re as _re  # noqa: PLC0415
+    stated_counts = {int(n) for n in _re.findall(r"\d+", stated.split("%", 1)[1])}
+    assert stated_counts <= {divergent, len(bundle["holdout"])}, (
+        f"the disclosure states {stated_counts}, and the holdout has "
+        f"{divergent} divergent of {len(bundle['holdout'])}")
 
 
 if __name__ == "__main__":

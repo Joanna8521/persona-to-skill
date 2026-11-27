@@ -74,34 +74,34 @@
     },
     {
       "id": "q9",
-      "reconstruction": "How long has it been stalled. A week and two months are different animals.",
+      "reconstruction": "no answer: the corpus gave this seat nothing, and the reconstruction says so rather than guessing",
       "baseline": "What is blocking the deal, and what does the buyer need to move?",
-      "aligned": true,
+      "aligned": false,
       "baseline_aligned": true,
       "judged_by": "blind comparison pass. Illustrative: this subject, these sources and both answers were written for this example",
       "blind": true
     },
     {
       "id": "q10",
-      "reconstruction": "The step nobody has done before, costed on its own.",
+      "reconstruction": "no answer: the corpus gave this seat nothing, and the reconstruction says so rather than guessing",
       "baseline": "Review the plan end to end and check the assumptions behind each stage.",
-      "aligned": true,
+      "aligned": false,
       "baseline_aligned": true,
       "judged_by": "blind comparison pass. Illustrative: this subject, these sources and both answers were written for this example",
       "blind": true
     },
     {
       "id": "q11",
-      "reconstruction": "What went wrong on your last contract. The answer, or its absence, ends the conversation.",
+      "reconstruction": "no answer: the corpus gave this seat nothing, and the reconstruction says so rather than guessing",
       "baseline": "What are your references, capacity and quality certifications?",
-      "aligned": true,
+      "aligned": false,
       "baseline_aligned": true,
       "judged_by": "blind comparison pass. Illustrative: this subject, these sources and both answers were written for this example",
       "blind": true
     },
     {
       "id": "q12",
-      "reconstruction": "Price first, so the shortlist is affordable before time goes into it.",
+      "reconstruction": "no answer: the corpus gave this seat nothing, and the reconstruction says so rather than guessing",
       "baseline": "Agree commercial terms early, then assess the supplier in detail.",
       "aligned": false,
       "baseline_aligned": true,
