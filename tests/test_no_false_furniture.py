@@ -103,6 +103,40 @@ def test_no_ci_step_swallows_its_own_failure():
             assert "|| true" not in body, f"{wf.name}: step {m.group(1)!r} swallows failure"
 
 
+def test_no_except_clause_swallows_silently():
+    """`except ...: pass` with nothing said is the same family as an unwired
+    contract value: something is being discarded and the reader cannot tell
+    whether that was the intent.
+
+    Swallowing is sometimes right. force_utf8 does it on purpose, because a
+    stream that cannot be reconfigured is not a reason to end a run. The rule
+    is that the reason has to be written at the except, where someone changing
+    it will see it, not only in a docstring they may not read.
+    """
+    import io
+    import tokenize
+
+    bad = []
+    for path in PKG + TESTS:
+        src = path.read_text(encoding="utf-8")
+        lines = src.splitlines()
+        comment_lines = set()
+        for tok in tokenize.generate_tokens(io.StringIO(src).readline):
+            if tok.type == tokenize.COMMENT:
+                comment_lines.add(tok.start[0])
+        for node in ast.walk(ast.parse(src)):
+            if not isinstance(node, ast.ExceptHandler):
+                continue
+            body = node.body
+            if not (len(body) == 1 and isinstance(body[0], ast.Pass)):
+                continue
+            span = range(node.lineno, (body[0].lineno) + 1)
+            if not any(ln in comment_lines for ln in span):
+                bad.append(f"{path.name}:{node.lineno}: {lines[node.lineno - 1].strip()}")
+    assert not bad, ("except clause(s) that pass with no comment saying why:\n  "
+                     + "\n  ".join(bad))
+
+
 def test_the_punctuation_gate_actually_exists_now():
     """Named explicitly because its absence is what prompted this file."""
     from persona_to_skill import validate_punct

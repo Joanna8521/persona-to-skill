@@ -37,4 +37,9 @@ def force_utf8(*streams) -> None:
         try:
             stream.reconfigure(encoding="utf-8", errors="replace")
         except (AttributeError, ValueError, OSError):
+            # Nothing to do and nothing to report. A stream that cannot be
+            # reconfigured is already wrapped, is not a real stream, or is
+            # closed; in every case the caller wanted its output encoded if
+            # possible and does not want the attempt to end the run. Raising
+            # here would turn a formatting preference into a failure.
             pass

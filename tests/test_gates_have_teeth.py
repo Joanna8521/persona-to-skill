@@ -20,8 +20,9 @@ import tempfile
 from pathlib import Path
 
 import _base  # noqa: F401
-import persona_to_skill
+from persona_to_skill import __path__ as PKG_PATH
 from persona_to_skill import contract
+from persona_to_skill.contract import SEAT_ENTRY_ORDER, SEATS
 from persona_to_skill.extract import contradictions, profile, seats, sensitivity
 from persona_to_skill.gates import anchor, consent, disclosure, holdout, interrogation
 
@@ -38,8 +39,7 @@ def _discovered_gates():
     ships unguarded. That happened once, with G5.
     """
     found = {}
-    for mod in pkgutil.walk_packages(persona_to_skill.__path__,
-                                     prefix="persona_to_skill."):
+    for mod in pkgutil.walk_packages(PKG_PATH, prefix="persona_to_skill."):
         try:
             m = importlib.import_module(mod.name)
         except ImportError:
@@ -76,8 +76,6 @@ GOOD_MEMO = {
     "confidence": {"level": 0.6, "rationale": "why"}, "next_actions": ["n"],
 }
 GOOD_STATEMENTS = [{"id": "f1", "class": "FACT", "text": "plain", "source_id": "s1"}]
-
-from persona_to_skill.contract import SEAT_ENTRY_ORDER, SEATS  # noqa: E402
 
 _ENTRY = {"claim": "walks away past 60 days", "source_id": "s1", "quote": "q"}
 GOOD_BUNDLE = {
