@@ -52,7 +52,7 @@ def normalise_dashes(t: str) -> str:
 
 
 def collapse_newline(t: str) -> str:
-    return re.sub(r"\s*\n\s*", " ", t)
+    return " ".join(t.split())
 
 
 def drop_ellipsis(t: str) -> str:

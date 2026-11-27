@@ -178,6 +178,27 @@ class Cue:
     end_ms: Optional[int] = None
 
 
+def _unwrap(text: str) -> str:
+    r"""Collapse a line break and the whitespace around it into one space.
+
+    This was _unwrap(text), which is quadratic: \n is itself
+    whitespace, so \s* on either side overlaps it and one run of spaces becomes
+    splittable many ways. At every position the engine consumes the run
+    greedily, fails to find \n, and backtracks through every shorter length.
+
+    Measured: 6ms at 2,000 spaces, 21ms at 4,000, 97ms at 8,000, roughly 4x per
+    doubling. Through join_cues on 300 cues of 4,000 characters that reached
+    2.3 seconds, which is how CI on windows-latest found it. Neither CodeQL nor
+    the earlier pattern audit reported this one; tests/test_redos.py did, by
+    timing the public entry points rather than only the patterns.
+
+    Splitting is linear and does the same thing.
+    """
+    if "\n" not in text:
+        return text.strip()
+    return " ".join(part.strip() for part in text.split("\n") if part.strip())
+
+
 def _ms(h: str, m: str, s: str, ms: str) -> int:
     return ((int(h) * 60 + int(m)) * 60 + int(s)) * 1000 + int(ms.ljust(3, "0"))
 
@@ -257,7 +278,7 @@ def join_cues(cues: Iterable[Cue],
     prev: Optional[Cue] = None
 
     for cue in cues:
-        text = re.sub(r"\s*\n\s*", " ", cue.text).strip()
+        text = _unwrap(cue.text)
         if not text:
             continue
         if drop_non_speech and _NON_SPEECH.match(text):
@@ -376,17 +397,17 @@ def attribute(cues: Iterable[Cue], subject_name: str) -> Dict[str, Any]:
     # transcript actually looks like rather than on an assumption about
     # transcripts in general.
     speech = [c for c in cue_list
-              if c.text.strip() and not _NON_SPEECH.match(re.sub(r"\s*\n\s*", " ", c.text).strip())]
+              if c.text.strip() and not _NON_SPEECH.match(_unwrap(c.text))]
     turn_markers = 0
     for c in speech:
-        who, _, inline = split_speaker(re.sub(r"\s*\n\s*", " ", c.text).strip())
+        who, _, inline = split_speaker(_unwrap(c.text))
         if who and not inline:
             turn_markers += 1
     coverage = (turn_markers / len(speech)) if speech else 0.0
     may_inherit = coverage >= MIN_LABEL_COVERAGE_TO_INHERIT
 
     for cue in cue_list:
-        text = re.sub(r"\s*\n\s*", " ", cue.text).strip()
+        text = _unwrap(cue.text)
         if not text or _NON_SPEECH.match(text):
             continue
         who, rest, inline = split_speaker(text)

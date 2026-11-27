@@ -42,7 +42,8 @@ def to_text(raw: str) -> str:
     # inside a paragraph, so a blank line marks a paragraph and a lone newline
     # is a wrap. Rejoining the wraps is what any ingest would do, and it is also
     # the thing that makes a quote crossing a wrap point findable at all.
-    paragraphs = [re.sub(r"\s*\n\s*", " ", p).strip() for p in t.split("\n\n")]
+    # Linear: see transcript._unwrap for why the regex form is quadratic.
+    paragraphs = [" ".join(w for w in p.split() if w) for p in t.split("\n\n")]
     return "\n".join(p for p in paragraphs if p)
 
 
