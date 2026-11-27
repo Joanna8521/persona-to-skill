@@ -63,6 +63,38 @@ def test_private_impersonation_rationale_is_about_effectiveness():
     assert "illegal" not in r and "law" not in r
 
 
+def test_memo_schema_frozen():
+    assert tuple(c.MEMO_REQUIRED_FIELDS) == (
+        "decision", "options", "known_facts", "consensus", "conflicts",
+        "key_assumptions", "main_risks", "evidence_gaps", "flip_condition",
+        "recommendation", "confidence", "next_actions",
+    )
+    assert c.MEMO_LOAD_BEARING_FIELDS == ("flip_condition", "confidence")
+    assert c.MEMO_EMPTIABLE_FIELDS == ("evidence_gaps", "conflicts")
+    assert c.VERDICTS == ("APPROVE", "REVISE", "INVESTIGATE", "DEFER")
+    assert c.VERDICTS_REQUIRING_FLIP_CONDITION_KNOWN == ("APPROVE", "REVISE")
+    assert c.CONFIDENCE_REQUIRING_NO_GAPS == 0.70
+    assert c.CONFIDENCE_REQUIRING_GAPS_NAMED == 0.70
+
+
+def test_statement_classes_frozen():
+    """The four-way split is what makes the traps in fluent prose visible, plus
+    UNKNOWN so "I do not know" has somewhere to go."""
+    assert c.STATEMENT_CLASSES == (
+        "FACT", "INFERENCE", "ASSUMPTION", "RECOMMENDATION", "UNKNOWN")
+    assert c.ASSUMPTION_STATUSES == ("verified", "unverified", "unverifiable")
+
+
+def test_evasion_and_hedging_are_separate_lists():
+    """Different faults: evasion dodges a judgement, hedging fakes knowing a
+    fact. Collapsing them would lose the second."""
+    assert not set(c.EVASION_PHRASES) & set(c.HEDGE_MARKERS)
+    for phrase in ("綜合評估", "視情況而定"):
+        assert phrase in c.EVASION_PHRASES
+    for marker in ("應該是", "通常會", "probably", "should be"):
+        assert marker in c.HEDGE_MARKERS
+
+
 def test_voice_and_likeness_declared_out_of_scope():
     joined = " ".join(c.OUT_OF_SCOPE_OUTPUTS).lower()
     assert "voice" in joined and "images" in joined and "first-person" in joined

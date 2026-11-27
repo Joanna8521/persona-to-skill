@@ -185,6 +185,95 @@ DISCLOSURE_REQUIRED_KEYS = (
     "retrieved_date",         # when the sources were gathered
 )
 
+# ------------------------------------------------------- deliberation memo
+# The one-page memo a reconstruction produces for a decision. Fixed schema, and
+# the fixedness is the point: people deciding something look only at what they
+# already want to look at, so the fields anyone would skip -- key assumptions,
+# main risks, what evidence is still missing -- are exactly the ones a schema
+# has to make non-skippable. A field left blank is visible; a field never asked
+# for is not.
+#
+# Chinese names are the ones used in the deliberation method these come from.
+MEMO_REQUIRED_FIELDS = {
+    "decision": "決策問題",
+    "options": "選項",
+    "known_facts": "目前已知事實",
+    "consensus": "三方共識",
+    "conflicts": "關鍵分歧",
+    "key_assumptions": "關鍵假設",
+    "main_risks": "主要風險",
+    "evidence_gaps": "尚缺證據",
+    "flip_condition": "決策翻轉條件",
+    "recommendation": "建議方案",
+    "confidence": "Confidence 信心水位",
+    "next_actions": "下一步行動",
+}
+
+# Of those, the two that carry the weight. The flip condition turns anxiety
+# into a solvable information gap; the confidence level changes how everything
+# above it should be read. Each gets a hard rule of its own in G5.
+MEMO_LOAD_BEARING_FIELDS = ("flip_condition", "confidence")
+
+# Fields where "none" is a legitimate answer rather than a dodge. Requiring
+# these to be non-empty would force someone to invent an evidence gap, which is
+# the opposite of the point.
+#
+# So the requirement is that a field be ANSWERED, not that it be non-empty: the
+# key must be present, and an explicit empty value counts as "none". A missing
+# key does not -- that is the skip the schema exists to make visible.
+#
+# "No gaps" still has to be paid for. See CONFIDENCE_REQUIRING_GAPS_NAMED: low
+# confidence with nothing missing is as incoherent as high confidence with
+# plenty missing, which makes an empty gap list expensive to claim falsely in
+# either direction.
+MEMO_EMPTIABLE_FIELDS = ("evidence_gaps", "conflicts")
+
+# Below this, declaring no evidence gaps is incoherent: something is making you
+# unsure, and naming it is the whole job.
+CONFIDENCE_REQUIRING_GAPS_NAMED = 0.70
+
+VERDICTS = ("APPROVE", "REVISE", "INVESTIGATE", "DEFER")
+
+# A verdict that commits to the decision. Not available while the quantity that
+# decides it is still unknown -- then the honest output is "go find this out",
+# which is what INVESTIGATE and DEFER are for. Being able to say "not yet" with
+# a straight face is a result, not a failure to produce one.
+VERDICTS_REQUIRING_FLIP_CONDITION_KNOWN = ("APPROVE", "REVISE")
+
+# Claiming this much confidence while evidence gaps are still open is not a
+# judgement call, it is incoherent. One of the two has to give.
+CONFIDENCE_REQUIRING_NO_GAPS = 0.70
+
+# Evasion. A field filled with one of these is a field not filled: "综合评估"
+# means "work it out yourself". Permitted only when the same field goes on to
+# spell out concrete conditions, which CONDITIONAL_MARKERS detects.
+EVASION_PHRASES = (
+    "綜合評估", "自己判斷", "看情況決定", "依專業判斷", "彈性處理", "視情況而定",
+    "見機行事", "酌情處理",
+    "use your judgement", "as appropriate", "case by case", "it depends",
+    "holistically", "weigh all factors",
+)
+
+CONDITIONAL_MARKERS = ("如果", "若", "當", "則", "→", "->", "if ", "when ", "unless ")
+
+# False confidence about a fact, as distinct from evasion of a judgement. These
+# read as knowing and mean not knowing, which is why they cannot appear in
+# anything classified as a fact. The remedy is reclassification, not deletion:
+# a hedged statement is an inference or an unknown, and saying so is honest.
+HEDGE_MARKERS = (
+    "應該是", "應該會", "通常會", "一般來說", "據說", "多半", "大概", "似乎",
+    "推測", "可能是", "照理說", "按理說",
+    "probably", "typically", "generally", "usually", "should be", "likely",
+    "presumably", "it seems", "arguably", "tends to",
+)
+
+STATEMENT_CLASSES = ("FACT", "INFERENCE", "ASSUMPTION", "RECOMMENDATION", "UNKNOWN")
+
+# A recommendation must name the assumptions it rests on, at the recommendation.
+# Listing them three fields away does not work: nobody reading a recommendation
+# scrolls back to check what it stands on.
+ASSUMPTION_STATUSES = ("verified", "unverified", "unverifiable")
+
 # ----------------------------------------------------------- punctuation scope
 # House rule: Chinese text uses full-width punctuation. English does not, and
 # the English README is the canonical one, so the punctuation gate must not run
@@ -214,4 +303,13 @@ FROZEN = (
     "HOLDOUT_MIN_DIVERGENT_ITEMS",
     "IMPERSONATION_PATTERNS",
     "DISCLOSURE_REQUIRED_KEYS",
+    "MEMO_REQUIRED_FIELDS",
+    "MEMO_LOAD_BEARING_FIELDS",
+    "VERDICTS",
+    "VERDICTS_REQUIRING_FLIP_CONDITION_KNOWN",
+    "CONFIDENCE_REQUIRING_NO_GAPS",
+    "CONFIDENCE_REQUIRING_GAPS_NAMED",
+    "MEMO_EMPTIABLE_FIELDS",
+    "EVASION_PHRASES",
+    "HEDGE_MARKERS",
 )

@@ -13,15 +13,35 @@ pull requests.
 Deliberately written against the gates' public surface only, so it keeps
 working as internals change.
 """
+import importlib
 import json
+import pkgutil
 import tempfile
 from pathlib import Path
 
 import _base  # noqa: F401
-from persona_to_skill import contract
-from persona_to_skill.gates import anchor, consent, disclosure, holdout
+from persona_to_skill import contract, gates
+from persona_to_skill.gates import anchor, consent, disclosure, holdout, interrogation
 
-GATES = ("G1-consent", "G2-anchor", "G3-disclosure", "G4-holdout")
+
+def _discovered_gates():
+    """Read the gate list off the package rather than hardcoding it.
+
+    A hardcoded list is the fail-open version of this file: add a gate, forget
+    to add it here, and the coverage test below goes green while the new gate
+    ships unguarded. That happened once, with G5.
+    """
+    found = {}
+    for mod in pkgutil.iter_modules(gates.__path__):
+        m = importlib.import_module(f"persona_to_skill.gates.{mod.name}")
+        name = getattr(m, "GATE", None)
+        if name and callable(getattr(m, "check", None)):
+            found[name] = m
+    return found
+
+
+GATE_MODULES = _discovered_gates()
+GATES = tuple(sorted(GATE_MODULES))
 
 
 def _corpus():
@@ -35,6 +55,17 @@ def _consent(data):
     json.dump(data, f)
     f.close()
     return Path(f.name)
+
+
+GOOD_MEMO = {
+    "decision": "d", "options": ["a", "b", "c"], "known_facts": ["f"],
+    "consensus": ["c"], "conflicts": ["x"], "key_assumptions": ["a1"],
+    "main_risks": ["r"], "evidence_gaps": ["g"],
+    "flip_condition": {"quantity": "q", "threshold": "t", "known": True},
+    "recommendation": {"verdict": "REVISE", "depends_on": ["f1"]},
+    "confidence": {"level": 0.6, "rationale": "why"}, "next_actions": ["n"],
+}
+GOOD_STATEMENTS = [{"id": "f1", "class": "FACT", "text": "plain", "source_id": "s1"}]
 
 
 # Each entry: a call that MUST be rejected, and why it must be.
@@ -69,6 +100,27 @@ BROKEN = [
          + [{"aligned": True, "baseline_aligned": True}] * 40)),
     ("G4-holdout", "holdout items with no baseline recorded",
      lambda: holdout.check([{"aligned": True}] * 20)),
+    ("G5-interrogation", "a memo with a field left unanswered",
+     lambda: interrogation.check(
+         {k: v for k, v in GOOD_MEMO.items() if k != "main_risks"}, GOOD_STATEMENTS)),
+    ("G5-interrogation", "a claim classified as fact with no source",
+     lambda: interrogation.check(
+         GOOD_MEMO, [{"id": "f1", "class": "FACT", "text": "plain"}])),
+    ("G5-interrogation", "a fact hedged with 'should be'",
+     lambda: interrogation.check(
+         GOOD_MEMO,
+         [{"id": "f1", "class": "FACT", "text": "it should be around 12%",
+           "source_id": "s1"}])),
+    ("G5-interrogation", "a committing verdict while the deciding number is unknown",
+     lambda: interrogation.check(
+         GOOD_MEMO | {"flip_condition": {"quantity": "q", "threshold": "t", "known": False}},
+         GOOD_STATEMENTS)),
+    ("G5-interrogation", "high confidence alongside open evidence gaps",
+     lambda: interrogation.check(
+         GOOD_MEMO | {"confidence": {"level": 0.95, "rationale": "feels right"}},
+         GOOD_STATEMENTS)),
+    ("G5-interrogation", "a memo with no classified statements",
+     lambda: interrogation.check(GOOD_MEMO, None)),
 ]
 
 
@@ -81,9 +133,19 @@ def test_every_gate_rejects_broken_input():
 
 
 def test_every_gate_is_covered_by_this_file():
-    """A gate added without a broken-input case here would ship unguarded."""
+    """A gate added without a broken-input case here would ship unguarded. The
+    gate list is discovered from the package, so forgetting to extend it is
+    what goes red -- not silently nothing."""
     covered = {g for g, _, _ in BROKEN}
-    assert covered == set(GATES), f"gates with no teeth test: {set(GATES) - covered}"
+    assert covered == set(GATES), (
+        f"gate(s) with no broken-input case: {sorted(set(GATES) - covered)}; "
+        f"case(s) for an unknown gate: {sorted(covered - set(GATES))}")
+
+
+def test_discovery_found_every_gate_module():
+    assert len(GATES) >= 5, f"discovered only {GATES}"
+    for mod in (consent, anchor, disclosure, holdout, interrogation):
+        assert mod.GATE in GATE_MODULES
 
 
 def test_every_gate_rejects_its_missing_input():
@@ -93,6 +155,7 @@ def test_every_gate_rejects_its_missing_input():
     assert not anchor.check([], _corpus()).passed
     assert not disclosure.check("", "A. Example", "PUBLISHED", {}).passed
     assert not holdout.check(None).passed
+    assert not interrogation.check(None, None).passed
 
 
 def test_a_clean_input_still_passes():
@@ -107,6 +170,7 @@ def test_a_clean_input_still_passes():
                             "PUBLISHED",
                             {k: "set" for k in contract.DISCLOSURE_REQUIRED_KEYS}).passed
     assert holdout.check([{"aligned": True, "baseline_aligned": False}] * 10).passed
+    assert interrogation.check(GOOD_MEMO, GOOD_STATEMENTS).passed
 
 
 def test_frozen_thresholds_are_not_relaxed():
@@ -121,6 +185,14 @@ def test_frozen_thresholds_are_not_relaxed():
     assert len(contract.IMPERSONATION_PATTERNS) >= 11
     assert set(contract.DISCLOSURE_REQUIRED_KEYS) >= {
         "reconstruction_notice", "not_endorsed", "holdout_alignment"}
+    # The memo schema is load-bearing in the same way: a field dropped from it
+    # is a field nobody is made to face.
+    assert set(contract.MEMO_REQUIRED_FIELDS) >= {
+        "key_assumptions", "main_risks", "evidence_gaps", "flip_condition",
+        "confidence", "recommendation"}
+    assert contract.CONFIDENCE_REQUIRING_NO_GAPS <= 0.70
+    assert len(contract.EVASION_PHRASES) >= 8
+    assert len(contract.HEDGE_MARKERS) >= 12
 
 
 if __name__ == "__main__":
