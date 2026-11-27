@@ -1,5 +1,9 @@
 # What using this actually looks like
 
+<a href="journey.md"><strong>English</strong></a> ·
+<a href="zh-TW/journey.md">繁體中文</a> ·
+<a href="ja/journey.md">日本語</a>
+
 Written before the collection and packaging stages exist, so the gates that do
 exist can be wired into the right place rather than bolted on afterwards.
 
@@ -121,8 +125,8 @@ is, which is what someone picking it out of a list needs to know.
 
 | Stage | Built |
 |---|---|
-| A collect | no, including every video question above |
-| B validate | gates yes (`G1`-`G5`, 120 tests); not yet on the packaging path |
+| A collect | partly: cue joining, provenance measurement and speaker attribution are done; the fetchers are not |
+| B validate | gates yes (`G1` to `G5`, 154 tests); not yet on the packaging path |
 | C package | no |
 | D install | manual, by the user |
 | E correct | follows from B |

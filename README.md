@@ -3,12 +3,11 @@
 <p align="center">
   <a href="README.md"><strong>English</strong></a> ·
   <a href="README.zh-TW.md">繁體中文</a> ·
-  <a href="README.ja.md">日本語</a> ·
-  <a href="README.ko.md">한국어</a>
+  <a href="README.ja.md">日本語</a>
 </p>
 
 <p align="center">
-<strong>Turn a practitioner's documented method into an agent skill — one that cites its sources and proves it transferred.</strong>
+<strong>Turn a practitioner's documented method into an agent skill that cites its sources and proves it transferred.</strong>
 </p>
 
 <p align="center">
@@ -22,7 +21,7 @@
 Ask a model to *be* someone and you get the one thing it is already good at:
 voice. Cadence, catchphrases, the shape of their sentences. What you do not get
 is their judgement, because judgement lives in the parts of their output nobody
-clips — the follow-up question, the case they turned down, the post-mortem on a
+clips: the follow-up question, the case they turned down, the post-mortem on a
 deal that died.
 
 So a persona prompt produces an advisor that **sounds right and decides
@@ -37,7 +36,7 @@ Two consequences, and they are the whole design:
 
 1. **Every attributed claim names a source and quotes it**, and the quote is
    verified against the source file on disk. Not "probably said something like
-   this" — the passage, or the claim does not ship.
+   this", the passage, or the claim does not ship.
 2. **The skill is scored on questions a generic model gets wrong.** Questions
    the subject has publicly answered, held back from extraction, and split by a
    recorded baseline: the same question answered with no reconstruction loaded
@@ -47,7 +46,7 @@ Two consequences, and they are the whole design:
    reconstruction answers those questions correctly whether or not it learned
    anything. Scored in one pool, five right out of ten that matter plus forty
    consensus answers reads as 90%. So the consensus pool is reported and never
-   gated, and the gate reads the divergent pool: the questions where the
+   gated, and the gate reads the divergent pool, the questions where the
    default answer is wrong, and only judgement that actually carried across can
    be right. The default is 80% there, which is lift over baseline measured
    directly rather than subtracted.
@@ -63,7 +62,7 @@ engineering already: the frameworks have names, the chapters have an order, the
 cases are paired to the claims they support.
 
 A practitioner's output has none of that scaffolding. It is scattered across
-years and formats, repetitive, and self-contradictory — the position they held
+years and formats, repetitive, and self-contradictory. The position they held
 in 2021 may be one they have since argued against. It is also weighted the
 wrong way: public material is mostly marketing, so it carries conclusions and
 withholds the reasoning.
@@ -84,7 +83,7 @@ confident-sounding shell.
 ```
 reconstructions/<slug>/
 ├── SKILL.md              Decision rules, with a source anchor on every claim
-├── decision-table.md     Situation → what they ask first → criteria → what they refuse
+├── decision-table.md     Situation, what they ask first, criteria, what they refuse
 ├── refusals.md           The conditions under which they say no
 ├── contradictions.md     Where they contradict themselves, and what reconciles it
 ├── sources.json          Every source: tier, date, retrieval provenance
@@ -186,9 +185,9 @@ One axis, because only one question needs a switch: where does the result go.
 | Impersonation phrasing | warned | **blocked** |
 
 Building an advisor from someone's public talks, for your own use, is ordinary
-and this tool does not lecture you about it. The source and quality gates still
-run — not to protect the subject, but because **you** are the one who gets hurt
-by an advisor that invents a rule and states it confidently.
+and this tool does not lecture you about it. The source and quality gates still run, and not to protect the subject.
+**You** are the one who gets hurt by an advisor that invents a rule and states
+it confidently.
 
 Disclosure applies when someone else reads the output, because that is the
 point at which a third party can be misled.
@@ -200,9 +199,9 @@ point at which a third party can be misled.
 * First-person dialogue presented as the subject speaking
 * Any claim that the subject authored, reviewed, or endorsed the output
 
-These are refused in every scope. The 2024–2026 wave of digital-replica
-statutes — Tennessee's ELVIS Act, Washington SB 5886, California SB 1111, the
-proposed federal NO FAKES Act — reaches voice and visual likeness. This tool
+These are refused in every scope. The 2024 to 2026 wave of digital-replica
+statutes, Tennessee's ELVIS Act, Washington SB 5886, California SB 1111, the
+proposed federal NO FAKES Act, reaches voice and visual likeness. This tool
 produces text and stays on its side of that line.
 
 ## Capability limits
@@ -248,7 +247,7 @@ incoherent, and so is low confidence with nothing missing.
 observation is not a pass and not a failure: it leaves the denominator and is
 reported separately. A high unknown rate fails the gate and blames the question
 set, which is where the defect is. (`bool` is a subclass of `int` in Python, so
-a JSON `true` would satisfy a naive integer check and be summed as 1 — this
+a JSON `true` would satisfy a naive integer check and be summed as 1, so this
 module refuses to invent a score nobody recorded.)
 
 ## License
