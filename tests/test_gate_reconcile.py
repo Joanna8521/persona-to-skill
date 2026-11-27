@@ -317,5 +317,57 @@ def test_a_count_the_holdout_does_not_support_blocks():
         assert "matches no count in the holdout" in v.errors[0]
 
 
+# ── material the reconstruction already read ──────────
+
+def test_a_seat_cannot_be_made_distinctive_by_material_already_seen():
+    """G4 excluded `seen_in_extraction` items and B-profile counted them.
+
+    Flag the items and the global figure stays clean while the same items
+    inflate a seat's divergent-aligned count, so the profile calls the seat
+    distinctive on questions the reconstruction was built from. A question
+    the reconstruction has already read measures nothing about transfer, in
+    a seat or across one, and the two scorers now agree about that.
+    """
+    from persona_to_skill.extract import profile  # noqa: PLC0415
+
+    seen = [dict(DIV, seen_in_extraction=True) for _ in range(5)]
+    assert profile.score_seat(seen)["verdict"] == "unfilled"
+    assert profile.score_seat(seen)["seen_excluded"] == 5
+    assert profile.score_seat(seen)["divergent_scored"] == 0
+
+    mixed = [dict(DIV) for _ in range(2)] + seen
+    assert profile.score_seat(mixed)["verdict"] == "generic"
+    assert profile.score_seat(mixed)["divergent_scored"] == 2
+
+    real = [dict(DIV) for _ in range(5)]
+    assert profile.score_seat(real)["verdict"] == "distinctive"
+
+
+def test_the_two_scorers_exclude_the_same_items():
+    """A seat scoring more divergent items than the whole holdout did would
+    mean one of them is counting material the other dropped."""
+    from persona_to_skill.extract import profile  # noqa: PLC0415
+
+    items = ([dict(DIV) for _ in range(3)]
+             + [dict(DIV, seen_in_extraction=True) for _ in range(4)]
+             + [dict(CON) for _ in range(2)])
+    whole = holdout.score(items)
+    seat = profile.score_seat(items)
+    assert whole["divergent"]["scored"] == seat["divergent_scored"] == 3
+    assert whole["seen_excluded"] == seat["seen_excluded"] == 4
+
+
+def test_the_exclusion_flag_itself_is_reconciled():
+    """An item marked seen on one side and not the other is two different
+    runs, however the other fields line up."""
+    whole = [dict(DIV) for _ in range(5)] + [dict(CON) for _ in range(7)]
+    slices = {"oppose": [dict(DIV, seen_in_extraction=True) for _ in range(5)],
+              "evidence": [dict(CON) for _ in range(7)]}
+    v = reconcile.check(whole, slices, GOOD_DISCLOSURE, "PUBLISHED")
+    assert not v.passed
+    message = [e for e in v.errors if "different runs" in e][0]
+    assert "seen in extraction" in message, message
+
+
 if __name__ == "__main__":
     sys.exit(_base.run_module(dict(globals())))

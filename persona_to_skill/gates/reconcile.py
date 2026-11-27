@@ -59,7 +59,8 @@ def _observations(items: List[Dict[str, Any]]) -> Counter:
     two genuinely different runs, which is the failure it exists to catch.
     """
     return Counter((_observation(i.get("aligned")),
-                    _observation(i.get("baseline_aligned")))
+                    _observation(i.get("baseline_aligned")),
+                    i.get("seen_in_extraction") is True)
                    for i in items)
 
 
@@ -115,10 +116,13 @@ def _name(value: Any) -> str:
 
 
 def _describe(counter: Counter) -> str:
-    parts = [f"aligned={_name(a)} baseline_aligned={_name(b)}: {n}"
-             for (a, b), n in sorted(counter.items(),
-                                     key=lambda kv: (_name(kv[0][0]),
-                                                     _name(kv[0][1])))]
+    parts = []
+    for (a, b, seen), n in sorted(counter.items(),
+                                  key=lambda kv: (_name(kv[0][0]),
+                                                  _name(kv[0][1]),
+                                                  kv[0][2])):
+        tail = ", seen in extraction" if seen else ""
+        parts.append(f"aligned={_name(a)} baseline_aligned={_name(b)}{tail}: {n}")
     return "; ".join(parts) or "nothing"
 
 
