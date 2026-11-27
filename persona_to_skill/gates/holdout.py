@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""G4 -- holdout alignment, scored against a baseline.
+"""G4: holdout alignment, scored against a baseline.
 
 The only gate that distinguishes a reconstruction from a costume.
 
@@ -19,7 +19,7 @@ So each item carries a BASELINE observation: the same question answered with no
 reconstruction loaded. Items split in two:
 
     consensus pool  the baseline already matches the subject. Reported, never
-                    gated -- no credit for an answer the default gets right.
+                    gated: no credit for an answer the default gets right.
     divergent pool  the baseline is wrong, so only judgement that actually
                     carried across can be right. The gate reads this pool.
 
@@ -28,7 +28,7 @@ which is the lift over baseline measured directly rather than subtracted.
 
 UNKNOWN is a first-class state throughout. An item with no recorded observation
 is not a pass and not a failure: it leaves the denominator and is reported on
-its own. Scoring it either way would invent the measurement -- as a failure it
+its own. Scoring it either way would invent the measurement: as a failure it
 slanders a reconstruction for a thin question set, as a pass it flatters one
 for a check that never ran.
 
@@ -71,9 +71,9 @@ def score(items: List[Dict[str, Any]]) -> Dict[str, Any]:
     """Score holdout items by pool, deriving nothing that was not recorded.
 
     Each item may carry:
-        aligned            bool -- did the reconstruction match the subject
-        baseline_aligned   bool -- did the no-reconstruction baseline match
-        seen_in_extraction bool -- was this material used to build the skill
+        aligned            bool: did the reconstruction match the subject
+        baseline_aligned   bool: did the no-reconstruction baseline match
+        seen_in_extraction bool: was this material used to build the skill
     """
     pools = {
         "divergent": {"aligned": 0, "diverged": 0},
@@ -127,7 +127,7 @@ def check(items: List[Dict[str, Any]] | None) -> Verdict:
     """Gate on holdout results.
 
     Fails closed when holdout material is absent, and when baselines are absent.
-    Both are the kind of optional input that invites a quiet pass -- which would
+    Both are the kind of optional input that invites a quiet pass, which would
     leave the one gate that proves the method transferred doing nothing at all.
     """
     if items is None:
@@ -197,7 +197,7 @@ def check(items: List[Dict[str, Any]] | None) -> Verdict:
     if con["alignment"] is not None:
         warnings.append(
             f"consensus pool: {con['alignment']:.0%} over {con['scored']} item(s), "
-            "reported but not gated -- a model with no reconstruction also answers these"
+            "reported but not gated: a model with no reconstruction also answers these"
         )
 
     return Verdict(GATE, not errors, errors, warnings, s)

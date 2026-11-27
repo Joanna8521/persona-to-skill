@@ -14,6 +14,13 @@
   <em>「誰かをクローンする」のではありません。方法を再構成し、領収書を添えます。</em>
 </p>
 
+<p align="center">
+  <a href="https://joanna8521.github.io/persona-to-skill/ja/"><strong>ドキュメント</strong></a> ·
+  <a href="https://joanna8521.github.io/persona-to-skill/ja/reference/contract/">凍結された契約</a> ·
+  <a href="https://joanna8521.github.io/persona-to-skill/ja/reference/gates/">ゲート</a> ·
+  <a href="https://joanna8521.github.io/persona-to-skill/ja/reference/cli/">コマンドライン</a>
+</p>
+
 ---
 
 ## これがペルソナ複製器ではない理由
@@ -140,6 +147,19 @@ T3 はしきい値ではなく**カテゴリ**です。いかなる同意記録�
 ```bash
 pip install .
 ```
+
+ドキュメントサイトはこのリポジトリ**から生成**されます。別に書き起こすのでは
+ないので、コードから乖離しようがありません。
+
+```bash
+pip install -r docs-requirements.txt
+python3 tools/build_docs.py && mkdocs serve
+```
+
+`docs/` は生成物です。`tools/build_docs.py --check` はページが古くなると失敗し、
+CI がそれを実行します。古いページは静かな嘘ではなく、失敗するチェックになります。
+リファレンスのページは凍結された契約、ゲートのモジュール、引数パーサから抽出され
+ており、それがこれらのページが存在する価値です。
 
 サブコマンドは 5 つ。それぞれ**既に存在し、既にテストされた**関数を包んでいる
 だけなので、コマンドラインが加えるのは引数の解析と終了コードだけで、それ以上は

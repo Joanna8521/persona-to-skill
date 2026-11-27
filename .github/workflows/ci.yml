@@ -190,7 +190,7 @@ jobs:
         with:
           python-version: "3.13"
       - run: python -m pip install ruff==0.6.9
-      - run: python -m ruff check persona_to_skill tests
+      - run: python -m ruff check persona_to_skill tests tools
       - name: punctuation gate on the documentation
         run: python -m persona_to_skill.validate_punct
 

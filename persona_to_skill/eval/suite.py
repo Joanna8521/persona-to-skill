@@ -28,7 +28,7 @@ observations that arrive are the kind that can carry a number.
                   candidate is the one under test, a judge has been handed the
                   result the experiment was supposed to produce, and a model
                   judge is no more resistant to that than a person. Counted,
-                  reported, never gated -- the same treatment G4 already gives
+                  reported, never gated, which is the treatment G4 already gives
                   material that was seen during extraction.
 
     SEEN          The material was used to build the skill. Alignment on it is

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""G1 -- source tier and consent gate.
+"""G1: source tier and consent gate.
 
 Runs before anything is read for content: it decides which material enters the
 pipeline at all, so no later stage has to ask.

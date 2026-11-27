@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""G5 -- interrogation of the deliberation memo.
+"""G5: interrogation of the deliberation memo.
 
 The traps this gate exists to catch all hide in fluent prose, which is why
 catching them cannot be left to an alert reader:
@@ -15,7 +15,7 @@ this pass.
 
 The gate works off a fixed schema, and the fixedness is the point. People
 deciding something look at what they already want to look at, so the fields
-anyone would skip -- key assumptions, main risks, what evidence is missing --
+anyone would skip (key assumptions, main risks, what evidence is missing)
 have to be made non-skippable. A blank field is visible; a field never asked
 for is not.
 
@@ -87,7 +87,7 @@ def _gaps_bearing_on_decision(gaps: Any) -> List[str]:
     """Which gaps count against a confident verdict.
 
     A gap is peripheral only when it says so. A bare string, or an object that
-    omits the key, bears on the decision -- fail closed, so the way to reconcile
+    omits the key, bears on the decision: fail closed, so the way to reconcile
     a gap with high confidence is to mark it, not to remove it.
     """
     out: List[str] = []

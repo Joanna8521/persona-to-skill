@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""G2 -- source anchor reconciliation.
+"""G2: source anchor reconciliation.
 
 Every claim attributed to the subject must name a source and quote it, and the
 quote must appear in that source verbatim.
 
 This gate recomputes independently: it reopens the corpus file from disk and
 searches for the quote itself. It does not consult whatever index, offset, or
-confidence score the extraction stage produced -- confirming an extraction with
+confidence score the extraction stage produced, because confirming an extraction with
 its own bookkeeping is the self-referential gate that always passes.
 """
 from __future__ import annotations
@@ -42,7 +42,7 @@ _NUM = re.compile(r"\d[\d,._]*\d|\d")
 # What is deliberately NOT folded: a removed ellipsis. An ellipsis marks elided
 # text, so dropping it asserts that two passages are contiguous when they are
 # not. That is an integrity failure, not a formatting difference, and it stays
-# a block -- with an error message that says so.
+# a block, with an error message that says so.
 
 # NFKC folds full-width digits and Latin, but 。，、：；（） are characters in
 # their own right rather than compatibility forms of ASCII, so they survive it.
@@ -61,8 +61,8 @@ _CJK_PUNCT = str.maketrans({
 #
 # Honest limit: this is a lexical list, like any other, and a nonstandard
 # contraction will still be rejected. Unlike a blacklist, incompleteness here
-# fails safe -- an unfolded form blocks a real quote rather than letting a
-# fabricated one through -- and the set of standard English contractions is
+# fails safe (an unfolded form blocks a real quote rather than letting a
+# fabricated one through) and the set of standard English contractions is
 # genuinely closed, so the list can be finished. It was measured, not guessed:
 # see experiments/g2_realcorpus.py.
 _CONTRACTIONS = (
@@ -88,7 +88,7 @@ def _expand(replacement: str):
     """Substitute `replacement` while keeping the matched text's own capital.
 
     Matching is case-insensitive, so replacing with a lowercase literal would
-    quietly lowercase the text at every contraction site -- turning "That's"
+    quietly lowercase the text at every contraction site, turning "That's"
     into "that is" while leaving case alone everywhere else, and rejecting a
     correctly quoted sentence over its first letter. Found by running the gate
     against real corpora rather than by reading it.
@@ -108,8 +108,8 @@ def _normalize(text: str) -> str:
     in wording is a different quote. What is folded is width, compatibility
     forms, whitespace runs, CJK punctuation width, the optional space between
     CJK and Latin text, and the closed set of English contractions. Each was
-    measured against real corpora before being added -- see
-    experiments/g2_realcorpus.py -- and each leaves the token stream intact.
+    measured against real corpora before being added (see
+    experiments/g2_realcorpus.py) and each leaves the token stream intact.
     """
     text = unicodedata.normalize("NFKC", text)
     text = text.translate(_CJK_PUNCT)
@@ -134,7 +134,7 @@ def check(claims: List[Dict[str, Any]], corpus_dir: Path,
     Each claim needs: `text` (what is being asserted), `source_id`, and `quote`
     (the passage it rests on). A claim may instead be marked
     `attribution: "inference"`, which exempts it from the quote check but
-    requires the output to label it as an inference -- G3 checks that label.
+    requires the output to label it as an inference, and G3 checks that label.
 
     `sources`, when given, carries each source's authorship. A quote can match
     its source exactly and still not be the subject's own words: The Art of the

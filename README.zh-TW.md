@@ -14,6 +14,13 @@
   <em>不是「複製任何人」。是重建一套方法，而且附上收據。</em>
 </p>
 
+<p align="center">
+  <a href="https://joanna8521.github.io/persona-to-skill/zh-TW/"><strong>文件站</strong></a> ·
+  <a href="https://joanna8521.github.io/persona-to-skill/zh-TW/reference/contract/">凍結契約</a> ·
+  <a href="https://joanna8521.github.io/persona-to-skill/zh-TW/reference/gates/">閘門</a> ·
+  <a href="https://joanna8521.github.io/persona-to-skill/zh-TW/reference/cli/">命令列</a>
+</p>
+
 ---
 
 ## 為什麼這不是人格複製器
@@ -140,6 +147,17 @@ T3 是一個**類別**，不是一個門檻。沒有任何授權紀錄、沒有�
 ```bash
 pip install .
 ```
+
+文件站是**從這個 repo 產生**的，不是另外寫一份，所以它不可能跟程式碼分岔：
+
+```bash
+pip install -r docs-requirements.txt
+python3 tools/build_docs.py && mkdocs serve
+```
+
+`docs/` 是產生出來的。`tools/build_docs.py --check` 在任何一頁過期時會失敗，而
+CI 會跑它，所以一頁過期的文件是一個紅掉的檢查，不是一句沒人發現的假話。參考頁
+是從凍結契約、閘門模組與參數解析器萃取出來的，那才是它們值得存在的理由。
 
 五個子指令。每一個都只是包住一個**已經存在、已經測過**的函式，所以命令列只多
 了參數解析與退出碼，別的沒有：一支自己帶判斷的 CLI 是第二套實作，而兩套一定

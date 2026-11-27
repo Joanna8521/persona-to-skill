@@ -345,7 +345,7 @@ def ingest(raw: str = "", cue_items: Optional[Sequence[Dict[str, Any]]] = None,
 # A turn is the subject's only when the label matches the subject. It is
 # somebody else's only when the label says so outright. Everything else is
 # UNKNOWN: surfaced for a person to resolve, never silently assigned. Guessing
-# in either direction is the failure -- guess "subject" and another person's
+# in either direction is the failure: guess "subject" and another person's
 # words become quotable as theirs; guess "other" and the subject's own words
 # are dropped from what can be quoted.
 SUBJECT = "subject"
@@ -374,7 +374,7 @@ def _same_person(label: str, subject_name: str) -> bool:
 
 # An unlabelled cue after a turn marker belongs to that turn only if the
 # transcript labels its turns consistently. Where only some turns are marked --
-# commonly just the interviewer's questions -- inheriting the last label
+# commonly just the interviewer's questions, so inheriting the last label
 # assigns the subject's own answers to somebody else, which is the worst
 # direction to be wrong in. So inheritance is conditional on how much of the
 # transcript is actually labelled, and below this it yields UNKNOWN instead.

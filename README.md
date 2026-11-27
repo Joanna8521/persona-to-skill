@@ -14,6 +14,13 @@
   <em>Not "clone anyone." Reconstruct a method, with receipts.</em>
 </p>
 
+<p align="center">
+  <a href="https://joanna8521.github.io/persona-to-skill/"><strong>Documentation</strong></a> ·
+  <a href="https://joanna8521.github.io/persona-to-skill/reference/contract/">The frozen contract</a> ·
+  <a href="https://joanna8521.github.io/persona-to-skill/reference/gates/">The gates</a> ·
+  <a href="https://joanna8521.github.io/persona-to-skill/reference/cli/">The command line</a>
+</p>
+
 ---
 
 ## Why this is not a persona cloner
@@ -220,6 +227,19 @@ Stated plainly so the tool is not read as offering what it cannot:
 ```bash
 pip install .
 ```
+
+The documentation site is built from this repository rather than written
+alongside it, so it cannot drift from the code:
+
+```bash
+pip install -r docs-requirements.txt
+python3 tools/build_docs.py && mkdocs serve
+```
+
+`docs/` is generated. `tools/build_docs.py --check` fails when a page is out of
+date, and CI runs it, so a stale page is a failing check rather than a quiet
+lie. The reference pages are extracted from the frozen contract, the gate
+modules and the argument parser, which is what makes them worth having.
 
 Five subcommands. Each wraps a function that already existed and was already
 tested, so the command line adds argument parsing and exit codes and nothing

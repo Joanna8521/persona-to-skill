@@ -319,6 +319,10 @@ def test_no_absolute_paths_outside_the_repo():
         + TESTS
         + sorted((ROOT / ".github").rglob("*.yml"))
         + sorted((ROOT / "experiments").rglob("*.py"))
+        # tools/ is exactly where this class grows: a helper written on one
+        # machine, promoted from a scratch file, carrying that machine's paths.
+        + [f for f in sorted((ROOT / "tools").rglob("*.py"))
+           if "__pycache__" not in f.parts]
     )
     for f in scanned:
         src = f.read_text(encoding="utf-8")

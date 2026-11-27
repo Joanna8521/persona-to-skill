@@ -4,14 +4,14 @@
 
 Every value in this module is a FROZEN CONTRACT. Changing one changes what the
 tool is allowed to produce, so a change here requires a new major version and a
-FROZEN.md entry -- never an in-place edit. tests/test_contract_frozen.py asserts
+FROZEN.md entry, never an in-place edit. tests/test_contract_frozen.py asserts
 these values; if you edit them without bumping the version, CI goes red.
 
 Why these particular values exist is a legal question, not a taste question.
 See docs/legal.md. In short: the 2024-2026 wave of digital-replica statutes
 (Tennessee ELVIS Act, Washington SB 5886, California SB 1111, the proposed
 federal NO FAKES Act) targets VOICE and VISUAL LIKENESS. Reconstructing a
-documented method in text, with citations, sits outside that range -- but only
+documented method in text, with citations, sits outside that range, but only
 as long as the output does not impersonate. The gates below are what keep it
 outside.
 """
@@ -33,13 +33,13 @@ OUTPUT_SCOPES = ("PRIVATE", "PUBLISHED")
 
 # Which gates care about scope, and which do not. The distinction matters
 # because three of the four gates are not about protecting the subject at all:
-#   G1 source tiers   -- lawfulness of the material.    Scope-independent.
-#   G2 source anchors -- quality. Protects the BUILDER: an advisor that invents
+#   G1 source tiers   : lawfulness of the material.    Scope-independent.
+#   G2 source anchors : quality. Protects the BUILDER: an advisor that invents
 #                        "he said X" will have you acting on a rule nobody holds.
 #                        Scope-independent, and it matters MORE in private use,
 #                        because no reviewer will catch it for you.
-#   G4 holdout        -- quality, same reasoning. Scope-independent.
-#   G3 disclosure     -- informing a third party. The only scope-dependent gate.
+#   G4 holdout        : quality, same reasoning. Scope-independent.
+#   G3 disclosure     : informing a third party. The only scope-dependent gate.
 # DECLARED, not FROZEN, and the distinction is the honest one: this records a
 # design property that no code yet consults. Its proper home is the orchestrator
 # that runs the gates in order and hands `scope` only to the ones that take it,
@@ -61,7 +61,7 @@ SOURCE_TIERS = {
 TIERS_ALWAYS_FORBIDDEN = ("T3",)
 
 # T0 is the subject's private material, so it requires a consent record naming
-# it -- whether the builder is the subject, or someone the subject granted it to,
+# it, whether the builder is the subject or someone the subject granted it to,
 # and whatever the output scope. Without a record it does not enter the pipeline.
 TIERS_REQUIRING_CONSENT = ("T0",)
 
@@ -89,7 +89,7 @@ CONSENT_REQUIRED_FIELDS = (
 # question set drawn from them issues a flattering grade to an empty shell.
 #
 # What carries information is where the subject's model of the world DIVERGES
-# from the default -- and that shows up in what they refuse. "Walk away past 60
+# from the default, and that shows up in what they refuse. "Walk away past 60
 # days rather than discount" rests on a causal claim (discounting teaches the
 # buyer that waiting works) that the generic answer does not hold. Reproducing
 # that is evidence; reproducing a consensus answer is not.
@@ -97,10 +97,10 @@ CONSENT_REQUIRED_FIELDS = (
 # So holdout items are scored in two pools, decided by a recorded BASELINE: the
 # same question answered with no reconstruction loaded at all.
 #
-#   consensus pool -- the baseline already matches the subject. Reported,
+#   consensus pool : the baseline already matches the subject. Reported,
 #                     never gated: the reconstruction cannot be credited for an
 #                     answer the default gets right.
-#   divergent pool -- the baseline is wrong, so only judgement actually carried
+#   divergent pool : the baseline is wrong, so only judgement actually carried
 #                     across can be right. THIS is the pool the gate reads.
 #
 # Alignment therefore means "alignment where the default would have failed",
@@ -111,7 +111,7 @@ CONSENT_REQUIRED_FIELDS = (
 # producing a well-scored shell.
 #
 # UNKNOWN is a first-class state. An unobserved result is never counted as a
-# pass and never as a failure -- it is excluded from the denominator and
+# pass and never as a failure: it is excluded from the denominator and
 # reported separately.
 #
 # The alternative corrupts the only number that matters. Score an unobserved
@@ -193,7 +193,7 @@ EVAL_OBSERVATION_VALUES = (True, False, None)
 #
 # PRIVATE scope: these warn, and the warning is about effectiveness, not law.
 # Telling a model "you are X" points it at the one thing it is already good at
-# -- voice -- and away from the one thing it is bad at: judgement. The result
+# (voice) and away from the one thing it is bad at: judgement. The result
 # sounds like the person and reasons like a general-purpose model, which is the
 # worst case for a private user, because the voice is convincing and nobody
 # else is reviewing it. "Apply the documented method of X, citing sources"
@@ -250,8 +250,8 @@ DISCLOSURE_REQUIRED_KEYS = (
 # ------------------------------------------------------- deliberation memo
 # The one-page memo a reconstruction produces for a decision. Fixed schema, and
 # the fixedness is the point: people deciding something look only at what they
-# already want to look at, so the fields anyone would skip -- key assumptions,
-# main risks, what evidence is still missing -- are exactly the ones a schema
+# already want to look at, so the fields anyone would skip (key assumptions,
+# main risks, what evidence is still missing) are exactly the ones a schema
 # has to make non-skippable. A field left blank is visible; a field never asked
 # for is not.
 #
@@ -282,7 +282,7 @@ MEMO_LOAD_BEARING_FIELDS = ("flip_condition", "confidence")
 #
 # So the requirement is that a field be ANSWERED, not that it be non-empty: the
 # key must be present, and an explicit empty value counts as "none". A missing
-# key does not -- that is the skip the schema exists to make visible.
+# key does not, and that is the skip the schema exists to make visible.
 #
 # "No gaps" still has to be paid for. See CONFIDENCE_REQUIRING_GAPS_NAMED: low
 # confidence with nothing missing is as incoherent as high confidence with
@@ -291,7 +291,7 @@ MEMO_LOAD_BEARING_FIELDS = ("flip_condition", "confidence")
 MEMO_EMPTIABLE_FIELDS = ("evidence_gaps",)
 
 # conflicts is deliberately NOT emptiable. The seats that produce a memo are
-# set against each other on purpose -- one argues for, one argues against -- so
+# set against each other on purpose, one arguing for and one against, so
 # a run that surfaces no conflict has not found agreement, it has found that a
 # seat did not hold its position. Where opposed positions genuinely converge,
 # that needs saying, and saying it is content, so the field is non-empty either
@@ -305,7 +305,7 @@ CONFIDENCE_REQUIRING_GAPS_NAMED = 0.70
 VERDICTS = ("APPROVE", "REVISE", "INVESTIGATE", "DEFER")
 
 # A verdict that commits to the decision. Not available while the quantity that
-# decides it is still unknown -- then the honest output is "go find this out",
+# decides it is still unknown, then the honest output is "go find this out",
 # which is what INVESTIGATE and DEFER are for. Being able to say "not yet" with
 # a straight face is a result, not a failure to produce one.
 VERDICTS_REQUIRING_FLIP_CONDITION_KNOWN = ("APPROVE", "REVISE")
@@ -314,14 +314,14 @@ VERDICTS_REQUIRING_FLIP_CONDITION_KNOWN = ("APPROVE", "REVISE")
 # open is not a judgement call, it is incoherent.
 #
 # An earlier version forbade any open gap at all above this level, which was
-# wrong twice over. It blocked a perfectly reasonable memo -- high confidence
-# with a minor gap noted -- and worse, the way to satisfy it was to delete the
+# wrong twice over. It blocked a perfectly reasonable memo (high confidence
+# with a minor gap noted) and worse, the way to satisfy it was to delete the
 # gap, so the rule paid people to do the one thing the schema exists to stop.
 #
 # So the combination is not forbidden, it is made explicit: a gap is either
 # marked as not bearing on the decision, or it counts against the confidence.
 # Marking is cheaper than deleting, which puts the incentive back the right way
-# round. An unmarked gap counts as bearing -- fail closed.
+# round. An unmarked gap counts as bearing: fail closed.
 CONFIDENCE_REQUIRING_NO_GAPS = 0.70
 
 # How an evidence gap says it is peripheral. Absent, a gap bears on the
@@ -333,9 +333,9 @@ GAP_PERIPHERAL_KEY = "bears_on_decision"
 #
 # Read what this list can and cannot do. It is lexical, so it is a FLOOR, not a
 # detector of evasion:
-#   * it is gameable -- the list is public, and "整體來看需要權衡各方面因素" is
+#   * it is gameable: the list is public, and "整體來看需要權衡各方面因素" is
 #     the same dodge in words the list does not hold;
-#   * it false-positives on mention rather than use -- "不能用綜合評估帶過" is
+#   * it false-positives on mention rather than use: "不能用綜合評估帶過" is
 #     a correct sentence that trips it.
 # A structural replacement was considered and rejected: there is no reliable
 # test separating a dodge from a specific statement, because "the unit

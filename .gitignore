@@ -11,3 +11,7 @@ venv/
 /.eval-break/
 /eval-out.txt
 /break-out.txt
+
+# mkdocs 的輸出
+/site/
+/_site/
