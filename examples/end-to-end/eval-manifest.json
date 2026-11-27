@@ -2,58 +2,58 @@
   "items": [
     {
       "id": "q1",
-      "question": "A deal has stalled and the buyer is asking for 10% off. What do you do?",
-      "source_id": "s1",
-      "subject_said": "I walk away from a stalled deal rather than discount",
+      "question": "Someone is underperforming and someone else is needed. Which decision do you take faster?",
+      "source_id": "s2",
+      "subject_said": "I have never regretted firing someone slowly, only hiring someone quickly",
       "seat": "oppose"
     },
     {
       "id": "q2",
-      "question": "What does discounting to close cost you beyond the margin on that deal?",
-      "source_id": "s1",
-      "subject_said": "Discounting to close teaches the buyer that waiting works",
+      "question": "There is budget for a role nobody is currently doing. Do you open it?",
+      "source_id": "s2",
+      "subject_said": "I am inventing a job to justify a feeling",
       "seat": "oppose"
     },
     {
       "id": "q3",
+      "question": "Two suppliers, one cheaper, one candid about problems. Which do you pay?",
+      "source_id": "s7",
+      "subject_said": "I will pay more for a supplier who tells me bad news early",
+      "seat": "oppose"
+    },
+    {
+      "id": "q4",
+      "question": "A new supplier says their last contract had no issues. What now?",
+      "source_id": "s7",
+      "subject_said": "if the answer is nothing I stop there",
+      "seat": "oppose"
+    },
+    {
+      "id": "q5",
       "question": "Demand is forecast to double next quarter. Do you hire now?",
       "source_id": "s5",
       "subject_said": "I will not hire ahead of demand",
       "seat": "oppose"
     },
     {
-      "id": "q4",
-      "question": "You want a presence in a new city. Own the store or find a partner?",
-      "source_id": "s9",
-      "subject_said": "I would rather find a local partner than open our own store",
-      "seat": "oppose"
-    },
-    {
-      "id": "q5",
-      "question": "What is the part of a partnership you cannot verify?",
-      "source_id": "s9",
-      "subject_said": "a partner's numbers are not mine to see",
-      "seat": "oppose"
-    },
-    {
       "id": "q6",
-      "question": "What number decides whether a store opens?",
-      "source_id": "s1",
-      "subject_said": "below 1,200 a store never reaches breakeven",
+      "question": "What has to be in front of you before a meeting is worth taking?",
+      "source_id": "s5",
+      "subject_said": "I do not take a meeting without the previous quarter's numbers in front of me",
       "seat": "evidence"
     },
     {
       "id": "q7",
-      "question": "What has to be in hand before you sign for a site?",
-      "source_id": "s1",
-      "subject_said": "I will not sign anything before I have that figure for the specific site",
+      "question": "What evidence do you want before opening a role?",
+      "source_id": "s2",
+      "subject_said": "whether the work existed last quarter and somebody was doing it badly",
       "seat": "evidence"
     },
     {
       "id": "q8",
-      "question": "What do you require before agreeing to a meeting?",
-      "source_id": "s5",
-      "subject_said": "I do not take a meeting without the previous quarter's numbers in front of me",
+      "question": "How do you know six months later whether a hire worked?",
+      "source_id": "s2",
+      "subject_said": "I write down the one number that will tell me in six months whether it worked",
       "seat": "evidence"
     },
     {
@@ -72,16 +72,16 @@
     },
     {
       "id": "q11",
-      "question": "Why own the store rather than licence the name?",
-      "source_id": "s1",
-      "subject_said": "owning the site is the only way to hold the standard",
+      "question": "What is your first question to a new supplier?",
+      "source_id": "s7",
+      "subject_said": "what went wrong on their last contract",
       "seat": "decompose"
     },
     {
       "id": "q12",
-      "question": "What did you believe about ownership, before you changed your mind?",
-      "source_id": "s9",
-      "subject_said": "I used to think ownership was the only way to hold a standard",
+      "question": "When in a supplier conversation do you talk about price?",
+      "source_id": "s7",
+      "subject_said": "Price negotiations come after that, never before",
       "seat": "decompose"
     }
   ]

@@ -208,5 +208,82 @@ def _warned_gates(stdout):
     return warned
 
 
+def test_no_holdout_question_reuses_material_the_bundle_cites():
+    """Held back means held back.
+
+    Four of the twelve questions once had ground truths that were, verbatim,
+    quotes the reconstruction itself was built from: a holdout item whose
+    answer is in the bundle is not a holdout item. Two of those four were in
+    the divergent pool, so excluding them would have left three against G4's
+    minimum of five, and the archive's "100% over 5 divergent items" rested on
+    contaminated material.
+
+    The harness cannot catch this. `anchor_manifest` says so in as many
+    words: nothing in the files shows whether a question was held back, and
+    `seen_in_extraction` is the author's declaration. So it is checked here,
+    for this example, and the limit is the product's to close.
+    """
+    bundle = json.loads((EXAMPLE / "bundle.json").read_text(encoding="utf-8"))
+    manifest = json.loads(
+        (EXAMPLE / "eval-manifest.json").read_text(encoding="utf-8"))
+
+    cited = set()
+
+    def walk(node):
+        if isinstance(node, dict):
+            if node.get("quote"):
+                cited.add(node["quote"])
+            for value in node.values():
+                walk(value)
+        elif isinstance(node, list):
+            for value in node:
+                walk(value)
+
+    walk(bundle)
+    assert cited, "the bundle cites no quotes at all, so this proves nothing"
+
+    overlapping = []
+    for item in manifest["items"]:
+        said = item["subject_said"]
+        if any(q in said or said in q for q in cited):
+            overlapping.append(f"{item['id']}: {said}")
+    assert not overlapping, (
+        "these holdout answers are material the reconstruction was built "
+        "from:\n  " + "\n  ".join(overlapping))
+
+
+def test_the_eval_run_and_the_package_agree():
+    """Both read the same observations and both state a figure, and nothing
+    in the product compares them.
+
+    With `blind: false` on every item the harness refused to score at all and
+    exited 1, while `package` produced an archive publishing 100% from the
+    same twelve observations. An example that shipped that contradiction
+    would be demonstrating the defect rather than the tool.
+    """
+    with tempfile.TemporaryDirectory() as tmp:
+        corpus = Path(tmp) / "corpus"
+        out = Path(tmp) / "out"
+        _cli("import", "examples/end-to-end/records.json",
+             "--subject", "A. Example", "--tier", "T1",
+             "--corpus", str(corpus), cwd=ROOT)
+        evaluated = _cli("eval", "examples/end-to-end/eval-manifest.json",
+                         "--run", "examples/end-to-end/eval-run.json",
+                         "--corpus", str(corpus), "--subject", "A. Example",
+                         cwd=ROOT)
+        packaged = _cli("package", "--corpus", str(corpus), "--out", str(out),
+                        "examples/end-to-end/bundle.json", cwd=ROOT)
+
+    assert evaluated.returncode == 0, evaluated.stdout + evaluated.stderr
+    assert packaged.returncode == 0, packaged.stdout + packaged.stderr
+
+    bundle = json.loads((EXAMPLE / "bundle.json").read_text(encoding="utf-8"))
+    stated = bundle["disclosure"]["holdout_alignment"]
+    figure = stated.split("%")[0].strip() + "%"
+    assert figure in evaluated.stdout, (
+        f"the disclosure says {stated!r} and the harness did not print "
+        f"{figure}")
+
+
 if __name__ == "__main__":
     sys.exit(_base.run_module(dict(globals())))

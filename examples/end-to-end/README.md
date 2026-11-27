@@ -3,8 +3,9 @@
 Four commands, from raw records to an installable skill. Every figure below
 came from running them; the last sections say what the run actually printed.
 
-**A. Example does not exist.** The three sources in `records.json` were
-written for this example. That matters more here than in most sample data:
+**A. Example does not exist.** The five sources in `records.json`, the
+twelve eval questions and both sides of every answer in `eval-run.json` were
+all written for this example. That matters more here than in most sample data:
 this tool reconstructs a real practitioner's method from their own published
 words, and a worked example that read like a real person's words would be the
 exact thing the gates are there to prevent.
@@ -36,7 +37,7 @@ persona-to-skill package --corpus /tmp/corpus --out /tmp/out \
 **`import`** reads the records, sanitises them, and writes one `.txt` per
 source into the corpus directory plus a `manifest.json`. The corpus is what
 `G2-anchor` later reads quotes against, so this is the step that decides what
-counts as evidence. It accepted 3 and rejected 0.
+counts as evidence. It accepted 5 and rejected 0.
 
 **`eval`** is where the holdout figure comes from. Twelve questions, each
 with the subject's own answer and the source it is in, against a recorded run
@@ -51,6 +52,26 @@ archive published "Measured alignment ... 100% over 5 divergent items" from
 booleans nobody had checked. That is the shape of defect this project exists
 to catch, so the example now runs the harness. `bundle.json`'s `holdout` and
 `holdout_by_seat` are the same twelve observations as `eval-run.json`.
+
+The twelve questions are drawn from material the reconstruction does not
+cite. That is not a detail: four of them originally had ground truths that
+were, word for word, quotes the bundle was built from, two of those in the
+divergent pool. A holdout item whose answer is in the bundle is not a
+holdout item, and excluding the contaminated ones would have left three
+divergent against G4's minimum of five. The harness cannot detect this. It
+says so itself, in `anchor_manifest`: nothing in the files shows whether a
+question was held back, and `seen_in_extraction` is the author's
+declaration. A test in this repository checks it for this example; closing
+it properly is the product's job.
+
+Two things this run is not. The answers on both sides were written for the
+example, so `judged_by` says so rather than naming a judging pass that never
+happened. And setting `blind: false` on every item, which is what an
+unjudged run honestly is, makes the harness refuse to score at all: *"not
+measured: no divergent item carried a blind, judged observation"*. It
+refuses correctly. `package`, reading the same twelve observations, still
+produces an archive claiming 100%. Nothing reconciles the two commands, and
+that gap is larger than any of the ones this example was written to show.
 
 **`gates`** renders the deliverable, then runs all nine gates against it. It
 exits non-zero if any gate fails, which is the shape CI wants. Nothing is

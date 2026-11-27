@@ -11,12 +11,34 @@
     "kind": "post"
   },
   {
+    "id": "s2",
+    "text": "On hiring, two things I keep relearning. I have never regretted firing someone slowly, only hiring someone quickly. The thing I check before a hire is whether the work existed last quarter and somebody was doing it badly; if nobody was doing it at all, I am inventing a job to justify a feeling. And when I do hire, I write down the one number that will tell me in six months whether it worked, where other people can see it.",
+    "platform": "example-blog",
+    "url": "https://example.invalid/posts/on-hiring",
+    "retrieved_at": "2026-11-27",
+    "published": "2024-08-14",
+    "authorship": "self_written",
+    "author": "A. Example",
+    "kind": "post"
+  },
+  {
     "id": "s5",
     "text": "A few habits I have not managed to drop. The question I ask first is how long it has been stalled, because a deal that moved last week is a different animal from one that has not moved in two months. I do not take a meeting without the previous quarter's numbers in front of me. When someone brings me a plan, I look for the step that has never been done before, and I make them cost that step on its own. And I will not hire ahead of demand: it reads as confidence and it is the cheapest way to go broke slowly.",
     "platform": "example-blog",
     "url": "https://example.invalid/posts/habits-i-have-not-dropped",
     "retrieved_at": "2026-11-27",
     "published": "2025-01-20",
+    "authorship": "self_written",
+    "author": "A. Example",
+    "kind": "post"
+  },
+  {
+    "id": "s7",
+    "text": "On suppliers I am unreasonable in one direction only. I will pay more for a supplier who tells me bad news early, and I will not pay less for one who hides it until the shipment lands. The first question I ask a new supplier is what went wrong on their last contract, and if the answer is nothing I stop there. Price negotiations come after that, never before.",
+    "platform": "example-blog",
+    "url": "https://example.invalid/posts/on-suppliers",
+    "retrieved_at": "2026-11-27",
+    "published": "2025-04-30",
     "authorship": "self_written",
     "author": "A. Example",
     "kind": "post"
