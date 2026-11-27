@@ -44,8 +44,16 @@ def test_every_generated_page_is_current():
         [sys.executable, "-I", str(BUILDER), "--check"],
         capture_output=True, text=True, cwd=str(ROOT),
     )
+    # The message does not claim to know WHY the builder failed.
+    #
+    # The first version said "docs/ is out of date" for any non-zero exit, and
+    # then the builder died on a Windows console encoding error while the
+    # pages were perfectly current. A test that names the wrong cause sends
+    # the next person to the wrong place, which is worse than one that just
+    # shows the output.
     assert result.returncode == 0, (
-        f"docs/ is out of date. Run `python3 tools/build_docs.py`.\n"
+        f"tools/build_docs.py --check failed (exit {result.returncode}). "
+        f"If it says a page is out of date, run `python3 tools/build_docs.py`.\n"
         f"{result.stdout}{result.stderr}"
     )
 

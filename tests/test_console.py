@@ -95,13 +95,55 @@ def test_the_runner_still_reports_a_failure_under_a_legacy_console():
 
 def test_every_entry_point_that_prints_forces_utf8():
     """Anything that can print non-ASCII and set an exit code has to call it.
-    Keeping the list here is cheaper than finding the fourth instance on a
-    Windows runner."""
+
+    This used to be a hardcoded list of two files, and its own docstring said
+    keeping the list here was cheaper than finding the fourth instance on a
+    Windows runner. The fourth instance then happened on a Windows runner,
+    because tools/build_docs.py was written after the list and nothing added
+    it: the script printed ✅, cp1252 could not encode it, the process exited
+    non-zero, and the test that ran it reported "docs/ is out of date" when
+    the pages were perfectly current.
+
+    A guard that is a fixed list is a guard that stops being true the moment
+    someone adds a file. So this one discovers its own subjects: any module
+    with a __main__ block that contains a non-ASCII string literal can print
+    one, and must force UTF-8 first.
+    """
+    import ast as _ast
     from pathlib import Path
+
     root = Path(__file__).resolve().parent.parent
-    for rel in ("persona_to_skill/validate_punct.py", "tests/_base.py"):
-        src = (root / rel).read_text(encoding="utf-8")
-        assert "force_utf8" in src, f"{rel} prints but does not force UTF-8"
+    files = []
+    for folder in ("persona_to_skill", "tools", "tests"):
+        files += [f for f in sorted((root / folder).rglob("*.py"))
+                  if "__pycache__" not in f.parts]
+
+    missing = []
+    for f in files:
+        src = f.read_text(encoding="utf-8")
+        if '__name__ == "__main__"' not in src and "__name__ == '__main__'" not in src:
+            continue
+        # Does it have a non-ASCII string literal anywhere? That is what a
+        # legacy console cannot encode.
+        tree = _ast.parse(src)
+        risky = any(
+            isinstance(n, _ast.Constant) and isinstance(n.value, str)
+            and not n.value.isascii()
+            for n in _ast.walk(tree)
+        )
+        if not risky:
+            continue
+        # `_base` calls it for every test file that runs through run_module.
+        if "force_utf8" in src or "_base.run_module" in src:
+            continue
+        missing.append(str(f.relative_to(root)))
+
+    assert not missing, (
+        f"these can print non-ASCII and set an exit code, and do not force "
+        f"UTF-8: {missing}. On a Windows console the print raises, the process "
+        f"exits non-zero, and a clean run becomes indistinguishable from a "
+        f"broken one."
+    )
 
 
 if __name__ == "__main__":

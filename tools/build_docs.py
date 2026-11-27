@@ -39,6 +39,9 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+
+from persona_to_skill._console import force_utf8  # noqa: E402
 DOCS = ROOT / "docs"
 PKG = ROOT / "persona_to_skill"
 
@@ -285,6 +288,12 @@ def targets() -> dict:
 
 
 def main(argv) -> int:
+    # This script prints ✅ and ❌, and a Windows console defaults to a legacy
+    # code page. Without this the print raises UnicodeEncodeError, the process
+    # exits non-zero, and whatever ran it reports a failure that has nothing to
+    # do with what was being checked. That is exactly what happened: the pages
+    # were current and the test said they were stale.
+    force_utf8()
     check = "--check" in argv
     bad = 0
     for rel, want in targets().items():
