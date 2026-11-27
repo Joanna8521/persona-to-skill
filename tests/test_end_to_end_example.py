@@ -77,13 +77,34 @@ def test_the_three_commands_in_the_readme_work():
         assert len(zips) == 1, [p.name for p in zips]
 
 
-def test_the_readme_does_not_claim_a_file_list_the_archive_does_not_have():
-    """The README prints the archive's contents. If packaging starts writing a
-    different set of files, the README becomes a confident description of
-    something that no longer happens."""
+def _documented_archive_listing():
+    """The fenced block of archive paths in the example README."""
+    readme = (EXAMPLE / "README.md").read_text(encoding="utf-8").splitlines()
+    listed, inside = [], False
+    for line in readme:
+        if line.strip() == "```":
+            if inside:
+                if listed:
+                    return listed
+                inside = False
+            continue
+        if line.startswith("a-example-method/"):
+            inside = True
+            listed.append(line.strip())
+    return listed
+
+
+def test_the_readme_archive_listing_matches_the_archive_exactly():
+    """Compared in both directions.
+
+    The first version of this test only checked that every archived file
+    appeared somewhere in the README. A file renamed or dropped by packaging
+    would leave its old line sitting in the README while every remaining name
+    still matched, so the test stayed green while the documented listing was
+    wrong. That is the same one-way check that lets a stale figure survive.
+    """
     import zipfile  # noqa: PLC0415
 
-    readme = (EXAMPLE / "README.md").read_text(encoding="utf-8")
     with tempfile.TemporaryDirectory() as tmp:
         corpus = Path(tmp) / "corpus"
         out = Path(tmp) / "out"
@@ -93,10 +114,13 @@ def test_the_readme_does_not_claim_a_file_list_the_archive_does_not_have():
         _cli("package", "--corpus", str(corpus), "--out", str(out),
              "examples/end-to-end/bundle.json", cwd=ROOT)
         archive = next(iter(out.glob("*.zip")))
-        names = zipfile.ZipFile(archive).namelist()
+        packaged = sorted(zipfile.ZipFile(archive).namelist())
 
-    missing = [n for n in names if n not in readme]
-    assert not missing, f"the README does not list: {missing}"
+    documented = sorted(_documented_archive_listing())
+    assert documented, "no archive listing found in the example README"
+    assert documented == packaged, (
+        f"\n  in the archive but not the README: {sorted(set(packaged) - set(documented))}"
+        f"\n  in the README but not the archive: {sorted(set(documented) - set(packaged))}")
 
 
 if __name__ == "__main__":

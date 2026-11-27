@@ -422,11 +422,34 @@ def test_every_test_file_runs_as_a_script():
         )
         guarded = '__name__ == "__main__"' in src or "__name__ == '__main__'" in src
         if not (called and guarded):
-            missing.append(f.name)
+            missing.append(f"{f.name} (no run_module block)")
+            continue
+
+        # The block has to be LAST. A test appended after it is defined only
+        # when pytest imports the module; running the file as a script exits
+        # at the block and never reaches the definition, so the new test is
+        # silently pytest-only and the file still reports success.
+        #
+        # This happened: two tests were appended to test_docs_site.py with
+        # `cat >>`, the block sat at line 193 of a 286-line file, and the
+        # script run said 7/7 passed while skipping both of them. The check
+        # above was satisfied the whole time, because the block existed.
+        last = tree.body[-1] if tree.body else None
+        is_main_guard = (
+            isinstance(last, ast.If)
+            and isinstance(last.test, ast.Compare)
+            and isinstance(last.test.left, ast.Name)
+            and last.test.left.id == "__name__"
+        )
+        if not is_main_guard:
+            after = type(last).__name__ if last is not None else "nothing"
+            missing.append(
+                f"{f.name} (run_module block is not last; {after} follows it, "
+                f"so a script run never reaches it)")
     assert not missing, (
         f"these test files cannot run as scripts: {missing}. Each needs the "
         f'`if __name__ == "__main__": sys.exit(_base.run_module(dict(globals())))` '
-        f"block that every other one has."
+        f"block, and it must be the last thing in the file."
     )
 
 

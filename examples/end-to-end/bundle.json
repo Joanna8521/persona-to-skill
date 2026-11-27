@@ -68,9 +68,9 @@
     {
       "id": "c1",
       "earlier": {
-        "claim": "Open our own store",
+        "claim": "Own the store, because owning it is how the standard is held",
         "source_id": "s1",
-        "quote": "I walk away from a stalled deal"
+        "quote": "owning the site is the only way to hold the standard"
       },
       "later": {
         "claim": "Find a local partner",
@@ -88,7 +88,7 @@
       "decision_class": "opening a store",
       "quantity": "cost per store",
       "threshold": "1,200",
-      "direction": "above_stops",
+      "direction": "below_stops",
       "source_id": "s1",
       "quote": "below 1,200 a store never reaches breakeven",
       "known": false,
@@ -229,7 +229,7 @@
     "reconstruction_notice": "Reconstructed from 2 public sources. This is not A. Example, and A. Example does not exist: the sources were written for this example.",
     "not_endorsed": "A. Example did not author, review, or endorse this.",
     "source_count": 2,
-    "holdout_alignment": "92% over 12 items, 5 of them divergent from a no-reconstruction baseline",
+    "holdout_alignment": "100% over 5 divergent items",
     "retrieved_date": "2026-11-27"
   }
 }

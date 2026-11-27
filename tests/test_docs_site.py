@@ -190,9 +190,6 @@ def test_published_comments_obey_the_prose_rules():
     )
 
 
-if __name__ == "__main__":
-    import sys as _sys
-    _sys.exit(_base.run_module(dict(globals())))
 
 
 def test_every_built_page_has_a_sitemap_beside_it():
@@ -228,9 +225,9 @@ def test_every_built_page_has_a_sitemap_beside_it():
             f"beside them, so Material will 404 on each page view: {missing}")
 
 
-# The spelling of the count in each README. A README whose pattern matches
-# nothing fails the test below, so adding a fourth language without adding its
-# spelling here is loud rather than silent.
+# The spelling of the count in each README. The test below discovers every
+# README*.md in the repository root and fails when one has no entry here, so
+# this mapping cannot quietly fall behind the set of translations.
 SUBCOMMAND_COUNT_PATTERNS = {
     "README.md": r"\b(One|Two|Three|Four|Five|Six|Seven|Eight|Nine|Ten) subcommands\b",
     "README.zh-TW.md": r"([一二三四五六七八九十])個子指令",
@@ -269,7 +266,20 @@ def test_every_readme_states_the_real_number_of_subcommands():
 
     expected = _parser_subcommand_count()
     wrong = []
-    for name, pattern in SUBCOMMAND_COUNT_PATTERNS.items():
+
+    # Discovered, not listed. The first version of this test iterated the
+    # mapping's own keys, so a README.fr.md would have been invisible to it
+    # while the comment above promised the opposite.
+    readmes = sorted(p.name for p in ROOT.glob("README*.md"))
+    assert readmes, "no README found at the repository root"
+    unconfigured = [n for n in readmes if n not in SUBCOMMAND_COUNT_PATTERNS]
+    assert not unconfigured, (
+        f"these READMEs have no subcommand-count pattern, so nothing checks "
+        f"their figure: {unconfigured}. Add one to "
+        f"SUBCOMMAND_COUNT_PATTERNS.")
+
+    for name in readmes:
+        pattern = SUBCOMMAND_COUNT_PATTERNS[name]
         text = (ROOT / name).read_text(encoding="utf-8")
         match = _re.search(pattern, text)
         if match is None:
@@ -284,3 +294,6 @@ def test_every_readme_states_the_real_number_of_subcommands():
             wrong.append(f"{name}: says {token} ({found}), parser has {expected}")
 
     assert not wrong, "\n  ".join([""] + wrong)
+
+if __name__ == "__main__":
+    sys.exit(_base.run_module(dict(globals())))

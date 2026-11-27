@@ -42,14 +42,20 @@ gate means there is no zip, not a zip with a warning in it.
 ## The archive
 
 ```
-a-example-method/SKILL.md              2286
-a-example-method/contradictions.md      691
-a-example-method/decision-table.md      342
-a-example-method/holdout-report.md     1077
-a-example-method/refusals.md            311
-a-example-method/sensitivity.md         442
-a-example-method/sources.json           328
+a-example-method/SKILL.md
+a-example-method/contradictions.md
+a-example-method/decision-table.md
+a-example-method/holdout-report.md
+a-example-method/refusals.md
+a-example-method/sensitivity.md
+a-example-method/sources.json
 ```
+
+The test compares this list with the archive in both directions. Checking
+only that every archived file appears here would leave a renamed or deleted
+file as a stale line nobody notices. Sizes are deliberately not listed: they
+change on every edit to the bundle, so pinning them would make the test fail
+for reasons that are not defects.
 
 ## What the gates said, including the warnings
 
@@ -61,7 +67,15 @@ should know. The warnings are the interesting part:
 | `B-contradictions` | 1 of 1 unresolved and flagged for digging; at this rate that is the intended outcome, not a failure |
 | `B-profile` | only the `oppose` seat is claimable, which is a normal result worth stating plainly |
 | `G4-holdout` | the consensus pool was 86% over 7 items, reported but not gated: a model with no reconstruction also answers those |
-| `G2-anchor` | 1 claim is marked `inference` and exempt from the quote check, and `G3` verifies the output labels it |
+| `G2-anchor` | 1 claim is marked `inference` and exempt from the quote check, "and `G3` verifies that the output labels them" |
+
+That last row quotes `G2-anchor` verbatim, and the quoted clause is not true
+today. `G3` does not check each inference claim's label: it warns when the
+word `inference` occurs anywhere in the rendered skill, and says nothing at
+all when it is absent, so an unlabelled inference passes silently. The claim
+appears in `anchor.py` as well as in the gate's output. Both are being fixed
+separately; this example states what the tool does now rather than what its
+own warning says it does.
 
 The bundle has 12 holdout items, 5 of them divergent from a no-reconstruction
 baseline, and one deliberate miss. A set where the reconstruction agrees with
