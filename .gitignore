@@ -7,3 +7,7 @@ __pycache__/
 .venv/
 venv/
 .DS_Store
+# CI 的 eval 例子破壞測試會用到的暫存
+/.eval-break/
+/eval-out.txt
+/break-out.txt

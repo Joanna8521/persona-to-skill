@@ -265,6 +265,91 @@ def test_the_punctuation_gate_actually_exists_now():
     assert "validate_punct" in ci, "the gate exists but CI does not run it"
 
 
+def test_no_absolute_paths_outside_the_repo():
+    """An absolute path is correct on the machine it was written on.
+
+    That is what makes the class invisible: it passes locally, every time, for
+    the author. It bit twice in one afternoon. A helper script shipped with
+    '/home/user/<project>/extension' hardcoded, which failed on CI's first run
+    with ENOENT on a path not in the repository. And a CI step used /tmp, which
+    works everywhere except Windows: Git Bash resolves /tmp to somewhere under
+    AppData while Python on Windows reads the same string as a path on the
+    current drive, so the shell wrote a copy where Python could not see it.
+    Ten platforms were green and one was not.
+
+    Relative paths are what both agree on, so absolute ones are refused here.
+    """
+    pattern = re.compile(
+        r"""['"](/(?:home|Users|tmp|var|opt|private|mnt)/[^'" \s]*)['"]"""
+    )
+    # Paths that really are that place on the system, rather than a stand-in
+    # for a file in this repository.
+    allowed = ("/tmp/pytest",)
+
+    def docstring_lines(src):
+        """Line numbers covered by a docstring.
+
+        A docstring is prose, like a comment, and the first version of this
+        check did not know that: it flagged the path quoted INSIDE THIS
+        FUNCTION'S OWN DOCSTRING, where it appears as the example of the bug.
+        Skipping only `#` lines was not enough, and skipping every string
+        literal would gut the check, so docstrings are found properly.
+        """
+        covered = set()
+        tree = ast.parse(src)
+        for node in ast.walk(tree):
+            if not isinstance(node, (ast.Module, ast.ClassDef,
+                                     ast.FunctionDef, ast.AsyncFunctionDef)):
+                continue
+            body = getattr(node, "body", None)
+            if not body:
+                continue
+            first = body[0]
+            if (isinstance(first, ast.Expr)
+                    and isinstance(first.value, ast.Constant)
+                    and isinstance(first.value.value, str)):
+                covered.update(range(first.lineno, (first.end_lineno or
+                                                    first.lineno) + 1))
+        return covered
+
+    hits = []
+    scanned = (
+        PKG
+        + TESTS
+        + sorted((ROOT / ".github").rglob("*.yml"))
+        + sorted((ROOT / "experiments").rglob("*.py"))
+    )
+    for f in scanned:
+        src = f.read_text(encoding="utf-8")
+        skip = docstring_lines(src) if f.suffix == ".py" else set()
+        for n, line in enumerate(src.split("\n"), 1):
+            if n in skip:
+                continue
+            stripped = line.lstrip()
+            if stripped.startswith("#") or stripped.startswith("//"):
+                continue
+            for m in pattern.finditer(line):
+                if m.group(1).startswith(allowed):
+                    continue
+                hits.append(f"{f.relative_to(ROOT)}:{n} {m.group(1)}")
+
+    # The workflows use bare /tmp paths in shell too, without quotes, and those
+    # are the ones that broke Windows. Catch them as well.
+    bare = re.compile(r"(?<![\w/.$\-])(/tmp/[\w./\-]+)")
+    for f in sorted((ROOT / ".github").rglob("*.yml")):
+        for n, line in enumerate(f.read_text(encoding="utf-8").split("\n"), 1):
+            if line.lstrip().startswith("#"):
+                continue
+            for m in bare.finditer(line):
+                hits.append(f"{f.relative_to(ROOT)}:{n} {m.group(1)}")
+
+    assert not hits, (
+        "absolute paths, which are correct only on the machine they were "
+        f"written on: {hits}. Use a path relative to the repository, or to "
+        "the script's own location."
+    )
+
+
 def test_every_test_file_runs_as_a_script():
     """`_base.run_module` exists so that a test file runs without pytest.
 

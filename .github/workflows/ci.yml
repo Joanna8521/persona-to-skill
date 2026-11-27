@@ -90,45 +90,66 @@ jobs:
           set -u
           fail=0
           E=examples/eval
+
+          # Every path here is RELATIVE, and that is the whole reason this
+          # block looks the way it does.
+          #
+          # The first version used /tmp. On Windows that fails in a way no
+          # other platform shows: Git Bash resolves /tmp to somewhere under
+          # AppData, while Python on Windows reads the same string as
+          # \tmp\... on the current drive. So the shell copied the example to
+          # one place and Python looked in another, and every break reported
+          # "could not apply" while the step still printed that the committed
+          # example passed. Ten platforms were green and one was not.
+          WORK=.eval-break
+          trap 'rm -rf "$WORK" eval-out.txt break-out.txt' EXIT
+
           run_eval () {
             python3 -m persona_to_skill.cli eval "$E/manifest.json" \
-              --run "$E/run.json" --corpus "$E/corpus" > /tmp/e.out 2>&1
+              --run "$E/run.json" --corpus "$E/corpus" > eval-out.txt 2>&1
           }
 
           if ! run_eval; then
             echo "::error::the example as committed does not pass"
-            cat /tmp/e.out
+            cat eval-out.txt
             exit 1
           fi
-          grep -q "Divergent-pool alignment: 90%" /tmp/e.out || {
+          grep -q "Divergent-pool alignment: 90%" eval-out.txt || {
             echo "::error::the example no longer scores the 90% its README states"
-            grep "Divergent-pool" /tmp/e.out
+            grep "Divergent-pool" eval-out.txt
             fail=1
           }
           echo "  the committed example passes at 90%"
 
-          # Each break must turn it red, and must say the thing the README
-          # says it says. A red run for some other reason would still pass a
-          # check that only looked at the exit code.
+          # Each break must turn it red, and must say the thing the README says
+          # it says. A red run for some other reason would still satisfy a
+          # check that only looked at the exit code, which is how the first
+          # version of this step passed on Windows while applying no break at
+          # all.
           break_it () {
             local what="$1" code="$2" expect="$3"
-            rm -rf /tmp/E && cp -r "$E" /tmp/E
-            python3 -c "$code" || { echo "::error::could not apply: $what"; fail=1; return; }
-            if python3 -m persona_to_skill.cli eval /tmp/E/manifest.json \
-                 --run /tmp/E/run.json --corpus /tmp/E/corpus > /tmp/b.out 2>&1; then
+            rm -rf "$WORK" && cp -r "$E" "$WORK"
+            if ! python3 -c "$code"; then
+              echo "::error::could not apply the break: $what"
+              fail=1
+              return
+            fi
+            if python3 -m persona_to_skill.cli eval "$WORK/manifest.json" \
+                 --run "$WORK/run.json" --corpus "$WORK/corpus" \
+                 > break-out.txt 2>&1; then
               echo "::error::STAYED GREEN: $what"
               fail=1
-            elif ! grep -q "$expect" /tmp/b.out; then
+            elif ! grep -q "$expect" break-out.txt; then
               echo "::error::red for the wrong reason: $what (expected '$expect')"
-              sed 's/^/    /' /tmp/b.out | tail -6
+              sed 's/^/    /' break-out.txt | tail -6
               fail=1
             else
               echo "  red as the README says: $what"
             fi
           }
 
-          R='import json,pathlib;p=pathlib.Path("/tmp/E/run.json");d=json.loads(p.read_text(encoding="utf-8"))'
-          M='import json,pathlib;p=pathlib.Path("/tmp/E/manifest.json");d=json.loads(p.read_text(encoding="utf-8"))'
+          R='import json,pathlib;p=pathlib.Path(".eval-break/run.json");d=json.loads(p.read_text(encoding="utf-8"))'
+          M='import json,pathlib;p=pathlib.Path(".eval-break/manifest.json");d=json.loads(p.read_text(encoding="utf-8"))'
           W='p.write_text(json.dumps(d,ensure_ascii=False),encoding="utf-8")'
 
           break_it "a ground truth that is not in its source" \
