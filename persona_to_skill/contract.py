@@ -74,10 +74,40 @@ CONSENT_REQUIRED_FIELDS = (
 # answer questions the subject has publicly answered, using material the
 # extraction never saw, then compare.
 #
+# But a raw alignment figure over all holdout questions measures almost
+# nothing, because most of what any practitioner says out loud is consensus.
+# Ask ten negotiation consultants what matters and the lists overlap; compress
+# them and you have the generic advice a model already holds. A reconstruction
+# scores well on those questions whether or not it learned anything, so a
+# question set drawn from them issues a flattering grade to an empty shell.
+#
+# What carries information is where the subject's model of the world DIVERGES
+# from the default -- and that shows up in what they refuse. "Walk away past 60
+# days rather than discount" rests on a causal claim (discounting teaches the
+# buyer that waiting works) that the generic answer does not hold. Reproducing
+# that is evidence; reproducing a consensus answer is not.
+#
+# So holdout items are scored in two pools, decided by a recorded BASELINE: the
+# same question answered with no reconstruction loaded at all.
+#
+#   consensus pool -- the baseline already matches the subject. Reported,
+#                     never gated: the reconstruction cannot be credited for an
+#                     answer the default gets right.
+#   divergent pool -- the baseline is wrong, so only judgement actually carried
+#                     across can be right. THIS is the pool the gate reads.
+#
+# Alignment therefore means "alignment where the default would have failed",
+# which is the lift over baseline, measured directly rather than subtracted.
+#
+# The honest consequence: a subject whose public positions are all consensus
+# cannot be meaningfully reconstructed, and this gate says so instead of
+# producing a well-scored shell.
+#
 # UNKNOWN is a first-class state. An unobserved result is never counted as a
 # pass and never as a failure -- it is excluded from the denominator and
 # reported separately. This follows book-to-skill's tools/evals/score.py, which
 # refuses to derive missing observations.
+# Applied to the DIVERGENT pool only (see the two-pool note above).
 HOLDOUT_MIN_ALIGNMENT = 0.80
 
 # A high UNKNOWN rate is a defect in the holdout question set, not in the
@@ -88,6 +118,11 @@ HOLDOUT_MAX_UNKNOWN_RATIO = 0.30
 # Below this many scored items, an alignment ratio is noise. Fail rather than
 # publish a percentage that means nothing.
 HOLDOUT_MIN_ITEMS = 10
+
+# Of those, how many must sit in the divergent pool. A set of 20 consensus
+# questions and 1 divergent one cannot support a claim about judgement, however
+# the total reads.
+HOLDOUT_MIN_DIVERGENT_ITEMS = 5
 
 # -------------------------------------------------------- impersonation forms
 # PUBLISHED scope: these block. They turn a cited reconstruction into a stand-in
@@ -176,6 +211,7 @@ FROZEN = (
     "HOLDOUT_MIN_ALIGNMENT",
     "HOLDOUT_MAX_UNKNOWN_RATIO",
     "HOLDOUT_MIN_ITEMS",
+    "HOLDOUT_MIN_DIVERGENT_ITEMS",
     "IMPERSONATION_PATTERNS",
     "DISCLOSURE_REQUIRED_KEYS",
 )

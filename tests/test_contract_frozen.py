@@ -25,6 +25,7 @@ def test_holdout_thresholds_frozen():
     assert c.HOLDOUT_MIN_ALIGNMENT == 0.80
     assert c.HOLDOUT_MAX_UNKNOWN_RATIO == 0.30
     assert c.HOLDOUT_MIN_ITEMS == 10
+    assert c.HOLDOUT_MIN_DIVERGENT_ITEMS == 5
 
 
 def test_consent_fields_frozen():

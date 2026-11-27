@@ -6,6 +6,44 @@ here, never an in-place edit. `tests/test_contract_frozen.py` asserts them.
 
 ## v0.1.0 (unreleased)
 
+### Amendment: holdout is scored in two pools
+
+`HOLDOUT_MIN_ALIGNMENT` is unchanged at `0.80`, but **what it is measured over
+has changed**, so the number means something different and the entry is
+recorded here rather than edited in place.
+
+Added: `HOLDOUT_MIN_DIVERGENT_ITEMS = 5`.
+
+A single alignment figure over all holdout questions measures almost nothing,
+because most of what any practitioner says out loud is consensus. A
+reconstruction answers those questions correctly whether or not it learned
+anything, so a question set drawn from them issues a flattering grade to an
+empty shell. Worse, it is trivially gamed: 5 of 10 on questions that matter,
+padded with 40 consensus answers, reads as 90% under a single pool.
+
+Each item now carries a recorded **baseline**: the same question answered with
+no reconstruction loaded at all.
+
+| Pool | Baseline | Gated |
+|---|---|---|
+| consensus | already matches the subject | no -- the default gets these right too |
+| divergent | wrong | **yes** -- only judgement that carried across can be right |
+
+So `0.80` now means *alignment where the default answer would have failed*,
+which is the lift over baseline measured directly rather than subtracted.
+`stats["gated_alignment"]` is named so a report cannot quietly print the
+consensus-inflated figure in its place.
+
+Missing baselines **fail closed**: without them the pools cannot be told apart,
+and falling back to a raw figure over all items is the exact measurement this
+gate exists to refuse.
+
+The honest consequence, stated by the gate rather than hidden: a subject whose
+public positions are all consensus cannot be meaningfully reconstructed. That
+is a finding, not a fixable question set.
+
+Tests: 68, with the consensus-padding attack as an explicit negative case.
+
 Frozen in `contract.py`:
 
 | Contract | Value |
