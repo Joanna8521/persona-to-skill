@@ -80,11 +80,62 @@ def test_provisional_values_are_read_by_production_code():
     assert not unwired, f"provisional value(s) read by no production code: {unwired}"
 
 
+def _defined_anywhere():
+    """Every upper-case module-level name in the package.
+
+    PROVISIONAL covers guesses wherever they live. Restricting the registry to
+    contract.py was half the idea: the guesses had simply scattered into the
+    modules that used them, which is harder to notice rather than better.
+    """
+    out = set()
+    for path in PKG:
+        for node in ast.parse(path.read_text(encoding="utf-8")).body:
+            if isinstance(node, ast.Assign):
+                out.update(t.id for t in node.targets
+                           if isinstance(t, ast.Name) and t.id.isupper())
+    return out
+
+
 def test_no_tier_names_a_value_that_does_not_exist():
-    defined = set(_contract_names())
+    defined = _defined_anywhere()
     for label, group in _tiers():
         ghosts = [n for n in group if n not in defined]
         assert not ghosts, f"{label} names values that do not exist: {ghosts}"
+
+
+def test_no_guessed_number_hides_outside_the_registry():
+    """A bare numeric constant in a module is either measured, structural, or a
+    guess. The guesses have to be registered; the others say what they are
+    where they are defined."""
+    import re
+    exempt = {
+        # measured: see the module docstrings for the figures behind them
+        "MIN_SENTENCE_DENSITY", "MIN_SENTENCE_CASING",
+        # structural, not a judgement call
+        "HOLDOUT_MIN_ALIGNMENT", "HOLDOUT_MAX_UNKNOWN_RATIO",
+        "CONTRADICTION_MAX_UNRESOLVED_RATIO",
+        "CONTRADICTION_UNRESOLVED_RATIO_FLOOR",
+        "CONFIDENCE_REQUIRING_NO_GAPS", "CONFIDENCE_REQUIRING_GAPS_NAMED",
+        "HOLDOUT_MIN_ITEMS", "HOLDOUT_MIN_DIVERGENT_ITEMS",
+    }
+    unregistered = []
+    for path in PKG:
+        src = path.read_text(encoding="utf-8")
+        for node in ast.parse(src).body:
+            if not isinstance(node, ast.Assign):
+                continue
+            for t in node.targets:
+                if not (isinstance(t, ast.Name) and t.id.isupper()):
+                    continue
+                if not re.match(r"^(MIN|MAX|DEFAULT|SHORT|LIMIT)_", t.id):
+                    continue
+                if t.id in exempt or t.id in contract.PROVISIONAL:
+                    continue
+                unregistered.append(f"{path.name}:{t.id}")
+    assert not unregistered, (
+        "numeric threshold(s) neither measured nor registered as a guess: "
+        f"{unregistered}. Put it in contract.PROVISIONAL with what would "
+        "settle it, or say where the measurement came from.")
 
 
 def test_every_frozen_value_is_read_by_production_code():

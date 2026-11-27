@@ -225,9 +225,17 @@ def test_ingest_reports_that_the_prose_was_assembled():
 
 
 def test_ingest_of_unpunctuated_captions_is_not_anchorable():
-    raw = ("WEBVTT\n\n00:00:01.000 --> 00:00:03.000\ni walk away from a stalled deal\n\n"
-           "00:00:03.000 --> 00:00:05.000\nrather than discount it to close\n")
-    assert tr.ingest(raw)["provenance"]["anchorable"] is False
+    """Long enough that locating a quote needs sentence boundaries. A short
+    unpunctuated source IS anchorable, because the whole of it is the quotable
+    unit; that distinction is tested in test_collect_provenance.py."""
+    blocks = []
+    for i in range(60):
+        blocks.append(f"00:00:{i % 60:02d}.000 --> 00:00:{(i + 1) % 60:02d}.000\n"
+                      "i walk away from a stalled deal rather than discount it to close")
+    raw = "WEBVTT\n\n" + "\n\n".join(blocks) + "\n"
+    prov = tr.ingest(raw)["provenance"]
+    assert prov["chars"] > 1000, prov["chars"]
+    assert prov["anchorable"] is False
 
 
 if __name__ == "__main__":

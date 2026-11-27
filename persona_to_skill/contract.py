@@ -550,6 +550,11 @@ FROZEN = (
 # version bump, because there is nothing yet to be faithful to. Moving one into
 # FROZEN needs a measurement, the way MIN_SENTENCE_DENSITY was set from 190k
 # characters of real text and HOLDOUT folding was set from a corpus experiment.
+#
+# The registry covers guessed numbers wherever they live, not only the ones in
+# this file. Restricting it to this module was half the idea: the guesses had
+# simply scattered into the modules that used them, which is harder to notice
+# rather than better.
 PROVISIONAL = {
     "HOLDOUT_MIN_ITEMS":
         "run holdout sets of varying size and find where the alignment figure "
@@ -566,6 +571,21 @@ PROVISIONAL = {
         "whether a usable method came out",
     "CONTRADICTION_UNRESOLVED_RATIO_FLOOR":
         "find the corpus size below which the ratio is noise",
+    "SHORT_SOURCE_CHARS":
+        "take real sources either side of the line and find where ambiguity "
+        "about a quote's position actually starts",
+    "DEFAULT_PARAGRAPH_GAP_MS":
+        "compare paragraph breaks against where a human transcriber put them, "
+        "on a transcript that has both",
+    "MIN_LABEL_COVERAGE_TO_INHERIT":
+        "collect transcripts that label every turn and transcripts that label "
+        "only some, and find where the two populations separate",
+    "MIN_DIVERGENT_PER_SEAT":
+        "the same question as HOLDOUT_MIN_DIVERGENT_ITEMS, on a single seat's "
+        "slice, which is smaller and therefore noisier",
+    "MAX_SOURCE_BYTES":
+        "measure the largest genuine public corpus for one subject; the limit "
+        "only has to sit above that",
 }
 
 # Policy stated in prose. No code reads these for a decision, and the same test

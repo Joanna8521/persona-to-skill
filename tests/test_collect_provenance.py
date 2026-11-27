@@ -8,9 +8,12 @@ HUMAN_EN = ("I walk away from a stalled deal. Discounting to close teaches the "
             "reopen on price. Margin is the point, not the signature.")
 HUMAN_ZH = ("停滯超過六十天就放手。打折成交會教買方拖著有用。這一條沒有例外。"
             "我們不在價格上重啟談判。重點是毛利，不是簽名。")
+# Long enough that locating a quote needs sentence boundaries. A SHORT
+# unpunctuated source is anchorable, because the whole of it is the quotable
+# unit, and that is tested separately below.
 ASR_LIKE = ("i walk away from a stalled deal discounting to close teaches the "
             "buyer that waiting works that is the whole of it we do not reopen "
-            "on price margin is the point not the signature")
+            "on price margin is the point not the signature ") * 12
 
 
 def test_human_text_is_anchorable():
@@ -20,11 +23,34 @@ def test_human_text_is_anchorable():
         assert p.sentence_density >= pv.MIN_SENTENCE_DENSITY
 
 
-def test_unpunctuated_text_is_not_anchorable():
+def test_a_long_unpunctuated_source_is_not_anchorable():
     p = pv.measure(ASR_LIKE, kind="transcript")
+    assert p.chars > pv.SHORT_SOURCE_CHARS
     assert not p.anchorable
     assert p.sentence_density == 0.0
     assert any("nothing to quote between" in r for r in p.why_not_anchorable)
+
+
+def test_a_short_unpunctuated_source_IS_anchorable():
+    """A real error that shipped, not a missing feature. A 40-character post
+    with no full stop measured 0.00 and was called unanchorable, when it is the
+    easiest thing in the world to quote: the whole source is the unit. Density
+    answers "can a quote be located between sentence boundaries", and that
+    question only arises once a source is long enough for the location to be in
+    doubt."""
+    for post in ("walk away past 60 days dont discount",
+                 "停滯超過六十天就放手 不打折",
+                 "leverage is the only thing that matters in a deal"):
+        p = pv.measure(post)
+        assert p.chars <= pv.SHORT_SOURCE_CHARS
+        assert p.anchorable, f"{post!r} judged unanchorable"
+        assert p.why_not_anchorable == []
+
+
+def test_an_empty_source_is_never_anchorable():
+    p = pv.measure("", kind="transcript")
+    assert not p.anchorable
+    assert p.why_not_anchorable == ["the source is empty"]
 
 
 def test_threshold_sits_well_below_real_human_text():
@@ -72,10 +98,6 @@ def test_unknown_kind_is_refused():
         except (ValueError, TypeError):
             continue
         raise AssertionError(f"kind {bad!r} accepted")
-
-
-def test_empty_text_is_not_anchorable():
-    assert not pv.measure("", kind="transcript").anchorable
 
 
 def test_dict_explains_a_refusal():

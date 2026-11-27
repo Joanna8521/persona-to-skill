@@ -63,6 +63,23 @@ MIN_SENTENCE_DENSITY = 0.30
 # being scored.
 MIN_SENTENCE_CASING = 0.50
 
+# A short source is anchorable whatever its punctuation, and the density test
+# does not apply to it.
+#
+# This was a real error, not a missing feature. A 40-character post with no
+# full stop measured 0.00 and was called unanchorable, when in fact it is the
+# easiest thing in the world to quote: the unit of quotation is the whole
+# source. Density answers "can a quote be located between sentence
+# boundaries", and that question only arises once a source is long enough for
+# the location to be in doubt.
+#
+# PROVISIONAL. 1000 characters is a guess that comfortably covers a social post
+# or a short comment while staying well below anything where locating a quote
+# needs sentence structure. What would settle it: take real sources either side
+# of the line and find where ambiguity about a quote's position actually
+# starts.
+SHORT_SOURCE_CHARS = 1000
+
 # How a source may be stored, and what each can support.
 #   text              prose as published
 #   transcript        a rendering of speech, anchorable or not per measurement
@@ -90,6 +107,11 @@ class Provenance:
         Not a judgement about the source's accuracy, and not a claim that a
         person reviewed it.
         """
+        if self.chars == 0:
+            return False
+        if self.chars <= SHORT_SOURCE_CHARS:
+            # Nothing to locate between: the whole source is the quotable unit.
+            return True
         if self.sentence_density < MIN_SENTENCE_DENSITY:
             return False
         if self.sentence_casing is not None and self.sentence_casing < MIN_SENTENCE_CASING:
@@ -99,6 +121,10 @@ class Provenance:
     @property
     def why_not_anchorable(self) -> List[str]:
         out: List[str] = []
+        if self.chars == 0:
+            return ["the source is empty"]
+        if self.chars <= SHORT_SOURCE_CHARS:
+            return []
         if self.sentence_density < MIN_SENTENCE_DENSITY:
             out.append(
                 f"{self.sentence_density:.2f} sentence-ending marks per 100 characters, "
