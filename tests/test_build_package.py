@@ -282,6 +282,56 @@ def test_no_subject_slug_is_refused():
     raise AssertionError("a bundle with no slug produced a filename")
 
 
+# ── the output path is a path somebody else chose ──────
+
+def test_a_slug_that_climbs_out_of_the_output_directory_is_refused():
+    """`subject.slug` becomes a directory inside the zip and part of the
+    filename beside it, so it is a path, and it arrives in the bundle.
+
+    Before this check it passed straight through. Verified at the time by
+    calling write_zip with `../../escaped-method` and watching the file appear
+    two levels above the directory the caller asked for.
+    """
+    for bad in ("../../escaped", "..", "....//x", "/etc/passwd", "a/b",
+                "a\\b", "C:/tmp/x", ".", "-leading", "x" * 70):
+        try:
+            package.slug({"subject": {"slug": bad}})
+        except ValueError:
+            continue
+        raise AssertionError(f"slug {bad!r} was accepted")
+
+
+def test_an_ordinary_slug_still_works():
+    """The other direction, so the check above is not passing by refusing
+    everything."""
+    for good in ("practitioner", "a-practitioner_2", "x.y", "A1"):
+        assert package.slug({"subject": {"slug": good}}) == good
+
+
+def test_a_zip_entry_that_escapes_its_own_directory_is_refused():
+    """Checked at the archive level too, and not because the slug check might
+    fail.
+
+    The two guard different mistakes. The slug check guards the value the
+    bundle supplies; this one guards whatever a future caller assembles. And
+    this is the one that matters to the person UNPACKING the archive rather
+    than the one building it.
+    """
+    for bad in ("../escaped/SKILL.md", "/abs/SKILL.md", "a\\b/SKILL.md",
+                "C:/x/SKILL.md"):
+        assert package._path_errors([bad]), f"{bad!r} was accepted"
+    assert not package._path_errors(["good-method/SKILL.md"])
+
+
+def test_the_zip_lands_inside_the_directory_that_was_asked_for():
+    """End to end, because the two checks above are about strings and the
+    thing that matters is where the file goes."""
+    out_dir = Path(tempfile.mkdtemp()) / "out"
+    path, verdicts, errors = package.run(bundle(), corpus_dir(), out_dir)
+    assert path is not None, errors
+    assert path.resolve().parent == out_dir.resolve(), path
+
+
 if __name__ == "__main__":
     import sys
     sys.exit(_base.run_module(dict(globals())))

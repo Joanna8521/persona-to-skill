@@ -25,6 +25,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import zipfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -64,10 +65,31 @@ def corpus_fingerprint(corpus_dir: Path) -> str:
     return h.hexdigest()[:16]
 
 
+# A slug becomes a directory inside the zip and part of the filename beside
+# it, so it is a path, and a path that comes out of the bundle is a path
+# somebody else chose. `../../escaped` passed straight through and the zip
+# landed outside the directory the caller asked for. Verified rather than
+# supposed: write_zip was called with that slug and the file appeared two
+# levels up.
+_SLUG_OK = re.compile(r"\A[A-Za-z0-9][A-Za-z0-9._-]{0,63}\Z")
+
+
 def slug(bundle: Dict[str, Any]) -> str:
     s = str((bundle.get("subject") or {}).get("slug") or "").strip()
     if not s:
         raise ValueError("bundle has no subject.slug; it names the output")
+    # One path component, and a conservative one. Not "reject ..": that is a
+    # blocklist, and a blocklist on paths is a list of the tricks somebody
+    # thought of. `....//` defeats a naive strip of "..", and a leading slash
+    # or a drive letter defeats a check for separators alone.
+    if not _SLUG_OK.match(s):
+        raise ValueError(
+            f"unusable subject.slug {s!r}. It names a directory inside the "
+            f"package and a file beside it, so it has to be a single path "
+            f"component: letters, digits, dot, dash and underscore, starting "
+            f"with a letter or a digit, at most 64 characters.")
+    if s.strip(".") == "":
+        raise ValueError(f"unusable subject.slug {s!r}: dots only")
     return s
 
 
@@ -132,6 +154,16 @@ def _path_errors(names: List[str]) -> List[str]:
     errs = []
     lowered: Dict[str, str] = {}
     for n in names:
+        # Traversal and absolute paths, checked here as well as at the slug.
+        # Two checks because they protect against different mistakes: the slug
+        # check guards the value the bundle supplies, this one guards whatever
+        # a future caller assembles. A zip entry that escapes its own directory
+        # is the archive version of the same bug, and it is the one that bites
+        # the person who unpacks it rather than the person who builds it.
+        if ".." in n.split("/") or n.startswith("/") or "\\" in n:
+            errs.append(f"{n}: path escapes the package directory")
+        if ":" in n[:3]:
+            errs.append(f"{n}: looks like an absolute Windows path")
         if any(ord(c) > 127 for c in n):
             errs.append(f"{n}: non-ASCII path; some installers reject the whole archive")
         if set(n) & ILLEGAL:

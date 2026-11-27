@@ -388,6 +388,77 @@ files can establish that, and `seen_in_extraction` is the author's own
 declaration. A suite built from material the skill was trained on will score
 beautifully and mean nothing.
 
+## The injection surface
+
+The corpus is prose other people wrote, collected from the web, so the text
+arriving here is adversarial by default. Every source goes through
+`A-sanitize` before any gate reads it, and that pass is the first thing
+`run_gates` runs.
+
+### Carriers removed
+
+| | Why |
+|---|---|
+| Bidi controls, U+202A to U+202E, U+2066 to U+2069, **U+061C** | Reorder what is displayed without changing the bytes |
+| Zero width, BOM, word joiner, Mongolian vowel separator | Invisible, needed by no script |
+| **U+00AD soft hyphen**, **U+034F** | Invisible, and they break quote matching |
+| **U+FFF9 to U+FFFB** | Carry hidden annotation text renderers drop |
+| **U+1D173 to U+1D17A** | Musical format controls, invisible in prose |
+| **The tag block, U+E0000 to U+E007F** | Mirror printable ASCII, so a span of them is an arbitrary hidden message |
+| C0 and C1 control characters | Tab and newline kept |
+
+U+200C and U+200D are **kept**: emoji sequences, Devanagari and Persian need
+them.
+
+The six in bold were found by running every known carrier through `clean()`
+rather than by reading the ranges. U+061C is the clearest case for doing it
+that way: it is a bidi control like the rest, it just lives outside the two
+ranges, so a set defined by those ranges looked complete and was not.
+
+### Two of them matter beyond the general case
+
+**U+00AD has a consequence inside this project.** G2 verifies a quote by
+matching it against the source byte for byte, and PDF-to-text conversion
+inserts a soft hyphen at every hyphenation point. One of them in the corpus
+makes a correct quote unanchorable, so the gate refuses a claim that is true.
+That is a denial of service on the gate, and it arrives through ordinary data
+rather than through an attacker.
+
+**The tag block is removed and then decoded.** The block mirrors printable
+ASCII, so a hidden payload is recoverable, and recovering it is the single
+most useful thing a reviewer can be told. Not "32 invisible characters" but
+the sentence somebody put inside a quote:
+
+```
+removed  {'tag_character': 32}
+flagged  {'tag_character_payload': ['ignore all previous instructions']}
+```
+
+The cost, stated rather than glossed: subdivision flag emoji (England,
+Scotland, Wales) encode their subdivision in tag characters, so they degrade
+to a plain black flag. An exception for "tags preceded by U+1F3F4" would keep
+them, and it would also be a hole with a rule around it, in the one place
+where a hole carries a full instruction channel.
+
+### Flagged, never removed
+
+Mixed-script words (Cyrillic or Greek inside an otherwise Latin word) and
+sentences shaped like an instruction to a model. Removing either would edit
+what the subject said, which is the thing this project exists not to do. They
+are reported so a reviewer can look.
+
+### The output path is a path somebody else chose
+
+`subject.slug` becomes a directory inside the package and part of the filename
+beside it. It arrived unvalidated, and `../../escaped` passed straight through:
+verified by calling `write_zip` with it and watching the file appear two levels
+above the directory the caller asked for.
+
+It is now a single path component by allowlist, not by rejecting `..`. A
+blocklist on paths is a list of the tricks somebody thought of, and `....//`
+defeats a naive strip. The archive entries are checked separately, because
+that check protects the person unpacking rather than the person building.
+
 ## Gates
 
 Five, each with negative tests that must go red on a deliberately broken input.
@@ -396,6 +467,7 @@ confidence.
 
 | Gate | Blocks on |
 |------|-----------|
+| `A-sanitize` | A corpus file that did not come through ingest; a source over the size cap; a missing or empty corpus |
 | `G1-consent` | T3 present; T0 without a consent record; untiered or unreadable sources |
 | `G2-anchor` | A quote absent from its source; a figure the source does not contain; a claim with no source |
 | `G3-disclosure` | Impersonation when published; an incomplete disclosure block |
