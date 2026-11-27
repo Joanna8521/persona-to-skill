@@ -178,13 +178,17 @@ def test_the_readme_reports_every_warning_the_run_produced():
         gated = _cli("gates", "--corpus", str(corpus),
                      "examples/end-to-end/bundle.json", cwd=ROOT)
 
-    warned = sorted({line.split()[1] for line in gated.stdout.splitlines()
-                     if line.strip().startswith("PASS")
-                     and line.split()[1]} & _warned_gates(gated.stdout))
+    warned = sorted(_warned_gates(gated.stdout))
     readme = (EXAMPLE / "README.md").read_text(encoding="utf-8")
 
-    missing = [g for g in warned if f"`{g}`" not in readme]
-    assert not missing, f"the README does not table these warnings: {missing}"
+    # Searched inside the table, not the whole file. Looking anywhere in the
+    # README passed with the G2-anchor row deleted, because that gate is
+    # named several times in the prose above it.
+    tabled = "\n".join(line for line in readme.splitlines()
+                        if line.startswith("| `"))
+    assert tabled, "no warning table found in the example README"
+    missing = [g for g in warned if f"| `{g}` |" not in tabled]
+    assert not missing, f"the README table does not list these warnings: {missing}"
 
     spelled = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5,
                "six": 6, "seven": 7, "eight": 8, "nine": 9}

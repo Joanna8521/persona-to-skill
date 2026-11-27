@@ -19,7 +19,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-import _base  # noqa: F401
+import _base
 
 ROOT = Path(__file__).resolve().parent.parent
 DOCS = ROOT / "docs"
@@ -211,8 +211,7 @@ def test_every_built_page_has_a_sitemap_beside_it():
     # "No module named mkdocs". A precondition has to test the thing the test
     # actually does.
     if importlib.util.find_spec("mkdocs") is None:
-        import pytest  # noqa: PLC0415
-        pytest.skip("mkdocs is not importable by this interpreter")
+        _base.skip("mkdocs is not importable by this interpreter")
 
     with tempfile.TemporaryDirectory() as tmp:
         built = Path(tmp) / "site"
