@@ -24,7 +24,7 @@ jobs:
           python-version: "3.13"
       - run: python -m pip install --upgrade pip
       - run: python -m pip install -r docs-requirements.txt
-      - run: python -m pip install -e .
+      - run: python -m pip install -e ".[dev]"
 
       # mkdocs.yml sets strict: true, so a broken internal link or a nav entry
       # pointing at a page that does not exist fails here rather than shipping
@@ -38,6 +38,14 @@ jobs:
       # is meant not to have.
       - name: the generated pages are current
         run: python3 tools/build_docs.py --check
+
+      # The docs tests skip themselves wherever mkdocs is not importable, and
+      # the tests jobs do not install it, so before this step the sitemap
+      # check had never run anywhere: it reported a skip in CI and a pass only
+      # on a laptop that happened to have mkdocs. This is the one job that
+      # has it.
+      - name: the docs tests, where mkdocs actually exists
+        run: python -m pytest tests/test_docs_site.py -q
 
       - uses: actions/upload-pages-artifact@v3
         with:

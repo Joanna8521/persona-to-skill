@@ -12,8 +12,8 @@ reference page keeps describing the old value, the site builds cleanly, and
 the page is wrong in the one direction that matters: it still looks
 authoritative.
 """
+import importlib.util
 import re
-import shutil
 import subprocess
 import sys
 import tempfile
@@ -204,10 +204,15 @@ def test_every_built_page_has_a_sitemap_beside_it():
     ROOTS. That silenced the home page and left every sub-page broken, and a
     test of the hook's intent would have passed.
     """
-    mkdocs = shutil.which("mkdocs")
-    if mkdocs is None:
+    # Asked of the interpreter that will run the build, not of PATH. The
+    # first version used shutil.which("mkdocs"), which answers a different
+    # question: in a virtualenv without mkdocs but with a system mkdocs still
+    # on PATH, which() says yes and `sys.executable -m mkdocs` then fails with
+    # "No module named mkdocs". A precondition has to test the thing the test
+    # actually does.
+    if importlib.util.find_spec("mkdocs") is None:
         import pytest  # noqa: PLC0415
-        pytest.skip("mkdocs is not installed")
+        pytest.skip("mkdocs is not importable by this interpreter")
 
     with tempfile.TemporaryDirectory() as tmp:
         built = Path(tmp) / "site"
