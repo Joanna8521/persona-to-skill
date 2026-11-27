@@ -279,5 +279,43 @@ def test_ids_on_one_side_only_fall_back_to_totals():
     assert any("carry no ids" in w for w in v.warnings), v.warnings
 
 
+# ── shape, and the numbers beside the percentage ──────
+
+def test_a_malformed_per_seat_input_is_a_verdict_not_a_crash():
+    """`holdout_by_seat: []` is not None, so it reached `.values()` and
+    raised AttributeError out of package.run. A crash is worse than any
+    verdict: it is not a finding anyone can act on, and it loses the errors
+    the other gates had already collected."""
+    for bad in ([], "x", 7):
+        v = reconcile.check(_h(), bad, GOOD_DISCLOSURE, "PUBLISHED")
+        assert not v.passed
+        assert "mapping" in v.errors[0], v.errors
+
+    v = reconcile.check(_h(), {"oppose": "not a list"}, GOOD_DISCLOSURE,
+                        "PUBLISHED")
+    assert not v.passed
+    assert "oppose" in v.errors[0]
+
+    v = reconcile.check("not a list", _seats(), GOOD_DISCLOSURE, "PUBLISHED")
+    assert not v.passed
+    assert "list of observations" in v.errors[0]
+
+
+def test_a_count_the_holdout_does_not_support_blocks():
+    """Only the percentage was compared, so a five-item divergent pool
+    accepted "100% over 500 divergent items" and "100% from 999 total".
+    Those go into SKILL.md verbatim under a label saying they were
+    measured."""
+    whole, slices = _h(), _seats()
+    for good in ("100% over 5 divergent items", "100% over 5 of 12", "100%"):
+        assert reconcile.check(whole, slices, {"holdout_alignment": good},
+                               "PUBLISHED").passed, good
+    for bad in ("100% over 500 divergent items", "100% from 999 total"):
+        v = reconcile.check(whole, slices, {"holdout_alignment": bad},
+                            "PUBLISHED")
+        assert not v.passed, f"{bad!r} was accepted"
+        assert "matches no count in the holdout" in v.errors[0]
+
+
 if __name__ == "__main__":
     sys.exit(_base.run_module(dict(globals())))

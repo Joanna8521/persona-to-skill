@@ -66,6 +66,25 @@ def _observations(items: List[Dict[str, Any]]) -> Counter:
 _PERCENT = re.compile(r"\d+(?:\.\d+)?\s*%")
 
 
+_INTEGER = re.compile(r"\d+")
+
+
+def _counts_are_supported(stated: str, allowed: set) -> list:
+    """Integers in the disclosure that no count in the holdout supports.
+
+    Only the percentage was compared, so a five-item divergent pool accepted
+    "100% over 500 divergent items" and "100% from 999 total". Those numbers
+    go into SKILL.md verbatim, under a label saying they were measured.
+
+    The two counts that can honestly appear are the size of the divergent
+    pool and the size of the holdout. Anything else is a number the holdout
+    does not support, whatever word sits next to it.
+    """
+    without_percentages = _PERCENT.sub(" ", stated)
+    found = {int(m.group(0)) for m in _INTEGER.finditer(without_percentages)}
+    return sorted(found - allowed)
+
+
 def _states_exactly(stated: str, gated_text: str) -> bool:
     """Does this disclosure state the computed figure, and only it?
 
@@ -116,6 +135,22 @@ def check(holdout: List[Dict[str, Any]] | None,
 
     if by_seat is None:
         return Verdict(GATE, False, [NO_BY_SEAT])
+
+    # Shape before content. A bundle supplying `holdout_by_seat: []` is not
+    # None, so it got past the check above and crashed package.run on
+    # `.values()`, which is worse than any verdict: a crash is not a finding
+    # a reader can act on, and it loses the errors the other gates collected.
+    if not isinstance(holdout, list):
+        return Verdict(GATE, False, [
+            f"holdout must be a list of observations, not {type(holdout).__name__}"])
+    if not isinstance(by_seat, dict):
+        return Verdict(GATE, False, [
+            f"holdout_by_seat must be a mapping of seat to observations, "
+            f"not {type(by_seat).__name__}"])
+    bad_seats = sorted(k for k, v in by_seat.items() if not isinstance(v, list))
+    if bad_seats:
+        return Verdict(GATE, False, [
+            f"these seats do not hold a list of observations: {bad_seats}"])
 
     # When every observation carries an id, the comparison is exact: which
     # seat each item landed in, not just how many of each kind there are.
@@ -189,6 +224,15 @@ def check(holdout: List[Dict[str, Any]] | None,
                 f"{gated_text}. The label on that line names the divergent pool, "
                 "so the raw figure across both pools is the wrong number "
                 "under it.")
+        else:
+            unsupported = _counts_are_supported(
+                stated, {computed["divergent"]["scored"], len(holdout)})
+            if unsupported:
+                errors.append(
+                    f"disclosure.holdout_alignment states {stated!r}, and "
+                    f"{unsupported} matches no count in the holdout: the "
+                    f"divergent pool has {computed['divergent']['scored']} "
+                    f"item(s) and the holdout has {len(holdout)}.")
 
     return Verdict(GATE, not errors, errors, warnings, {
         "items": sum(whole.values()),
