@@ -128,7 +128,27 @@ def _collect(args: List[str]) -> List[Path]:
     return sorted(Path(".").rglob("*.md"))
 
 
+def _force_utf8_output() -> None:
+    """Print UTF-8 whatever the console claims it can take.
+
+    This gate reports violations by quoting the offending line, and the lines
+    it is most needed for contain Chinese. On a Windows console the default
+    encoding is a legacy code page, so printing that excerpt raises
+    UnicodeEncodeError and the process exits 1 for a reason that has nothing to
+    do with the documents: a clean run and a broken one become
+    indistinguishable, both failing.
+
+    Found by CI on windows-latest, where every other platform was green.
+    """
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError, OSError):
+            pass            # already wrapped, or not a real stream
+
+
 def main(argv: List[str]) -> int:
+    _force_utf8_output()
     paths = [p for p in _collect(argv) if ".git" not in p.parts]
     if not paths:
         print("no Markdown files to check")

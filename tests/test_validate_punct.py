@@ -147,6 +147,51 @@ def test_exit_code_is_one_on_a_violation():
     assert vp.main([str(ok)]) == 0
 
 
+
+
+# ---------------------------------------------------------------------------
+# Regression: a legacy console encoding must not turn a report into a crash
+# ---------------------------------------------------------------------------
+
+def test_reporting_a_chinese_violation_survives_a_legacy_console():
+    """CI on windows-latest failed here while every other platform was green.
+
+    The gate reports a violation by quoting the line, and the lines it is most
+    needed for contain Chinese. Under a legacy code page that print raises
+    UnicodeEncodeError and the process exits 1, so a clean run and a broken one
+    become indistinguishable: both fail, for a reason that has nothing to do
+    with the documents.
+    """
+    import io
+    import sys
+
+    p = _write("README.zh-TW.md", "一個句子, 半形逗號在這裡。\n")
+    saved_out, saved_err = sys.stdout, sys.stderr
+    # cp1252 cannot encode Chinese, which is what the Windows runner gave us.
+    sys.stdout = io.TextIOWrapper(io.BytesIO(), encoding="cp1252", errors="strict")
+    sys.stderr = io.TextIOWrapper(io.BytesIO(), encoding="cp1252", errors="strict")
+    try:
+        code = vp.main([str(p)])
+    finally:
+        sys.stdout, sys.stderr = saved_out, saved_err
+    assert code == 1, "the violation must still be reported as a violation"
+
+
+def test_a_clean_run_under_a_legacy_console_still_exits_zero():
+    import io
+    import sys
+
+    p = _write("README.zh-TW.md", CLEAN_ZH)
+    saved_out, saved_err = sys.stdout, sys.stderr
+    sys.stdout = io.TextIOWrapper(io.BytesIO(), encoding="cp1252", errors="strict")
+    sys.stderr = io.TextIOWrapper(io.BytesIO(), encoding="cp1252", errors="strict")
+    try:
+        code = vp.main([str(p)])
+    finally:
+        sys.stdout, sys.stderr = saved_out, saved_err
+    assert code == 0
+
+
 if __name__ == "__main__":
     import sys
     sys.exit(_base.run_module(dict(globals())))
