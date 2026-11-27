@@ -1,9 +1,5 @@
 # What using this actually looks like
 
-<a href="journey.md"><strong>English</strong></a> ·
-<a href="zh-TW/journey.md">繁體中文</a> ·
-<a href="ja/journey.md">日本語</a>
-
 Written before the collection and packaging stages exist, so the gates that do
 exist can be wired into the right place rather than bolted on afterwards.
 

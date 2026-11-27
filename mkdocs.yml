@@ -99,6 +99,11 @@ nav:
       - The gates: reference/gates.md
       - The command line: reference/cli.md
 
+# Contrast fixes for the theme's defaults, found by running axe-core against
+# the built site. See the file for the measured ratios.
+extra_css:
+  - stylesheets/a11y.css
+
 markdown_extensions:
   - admonition
   - attr_list

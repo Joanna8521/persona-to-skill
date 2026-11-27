@@ -1,0 +1,104 @@
+/* Contrast fixes for the theme's defaults.
+ *
+ * Every ratio below was measured by axe-core against the BUILT site in both
+ * colour schemes, not computed from the palette. That distinction matters
+ * here: the slate code background is #272a35, and an earlier version of this
+ * file claimed its figures against #1e1e1e, which inflated one margin from
+ * 4.65 to 5.43. A stated ratio that was never measured is just a comment
+ * that happens to contain a number.
+ *
+ * Two further traps this file exists to hold shut:
+ *
+ *   - A pass in one colour scheme is not a pass. The first axe run honoured
+ *     prefers-color-scheme and the runner was in light mode, so dark mode was
+ *     never tested, and dark mode was the worse of the two.
+ *
+ *   - axe only sees the tokens that happen to appear on the pages it visits.
+ *     .m (number) was never flagged and still failed at 4.45, because none of
+ *     the nine pages rendered a numeric literal in a code block. The whole
+ *     Pygments palette is checked here, not the subset that got rendered.
+ *
+ * Replacements keep the theme's hue and saturation and raise only lightness,
+ * and they target 4.7 rather than 4.50 so a future palette tweak does not
+ * quietly drop back under the line.
+ */
+
+/* ── Light: comments in highlighted code. 5.04 on #f5f5f5. ───────────────── */
+
+.highlight .c,
+.highlight .c1,
+.highlight .cm,
+.highlight .cs,
+.highlight .ch,
+.highlight .cp,
+.highlight .cpf {
+  color: #696969;
+}
+
+/* ── Dark: comments on the slate code background. 4.71 on #272a35. ───────── */
+
+[data-md-color-scheme="slate"] .highlight .c,
+[data-md-color-scheme="slate"] .highlight .c1,
+[data-md-color-scheme="slate"] .highlight .cm,
+[data-md-color-scheme="slate"] .highlight .cs,
+[data-md-color-scheme="slate"] .highlight .ch,
+[data-md-color-scheme="slate"] .highlight .cp,
+[data-md-color-scheme="slate"] .highlight .cpf {
+  color: #949494;
+}
+
+/* ── Dark: syntax tokens on #272a35. ─────────────────────────────────────────
+ *
+ * Measured before, measured after, lightness-only changes:
+ *
+ *   constant  #9383e2 4.48 → #9788e3 4.73   flagged by axe (.nb)
+ *   number    #e6695b 4.45 → #e77163 4.72   NOT flagged: never rendered
+ *   keyword   #6791e0 4.56 → #6b94e1 4.73   passed, but with 0.06 to spare
+ *   special   #f06090 4.62 → #f06392 4.70   passed, but with 0.12 to spare
+ *   function  #c973d9 4.72                  left alone
+ *   string    #2fb170 5.20                  left alone
+ */
+
+[data-md-color-scheme="slate"] {
+  --md-code-hl-constant-color: #9788e3;
+  --md-code-hl-number-color: #e77163;
+  --md-code-hl-keyword-color: #6b94e1;
+  --md-code-hl-special-color: #f06392;
+}
+
+/* ── Dark: inline code inside a link. 4.13 → 4.75 on #272a35. ─────────────────
+ *
+ * The link colour is legible on the page background (4.69 on #1e2029) and
+ * fails only where a link wraps a <code>, because the code background is
+ * lighter than the page. Scoped to that case so ordinary links keep the
+ * theme's primary colour.
+ */
+
+[data-md-color-scheme="slate"] .md-typeset a > code {
+  color: #6594ea;
+}
+
+/* ── The footer link. ────────────────────────────────────────────────────────
+ *
+ * WCAG 1.4.1 (link-in-text-block): a link inside a block of text must be
+ * distinguishable from the surrounding text by something other than colour,
+ * or else reach 3:1 against it. The theme's footer failed this on all 18
+ * page x scheme combinations at 2.02:1, and setting .md-copyright to #888888
+ * for 2.1.4.3 above pushed it down to 1.79:1 — so one side of this ratio is
+ * a fix of mine, even though the violation predates it.
+ *
+ * Fixed from both sides: an underline, which satisfies 1.4.1 without relying
+ * on colour at all, and white link text, which reaches 3.54:1 against the
+ * #888888 surround and 17.93:1 against the #171717 footer.
+ */
+
+.md-copyright,
+.md-copyright__highlight {
+  color: #888888;
+}
+
+.md-copyright a,
+.md-copyright__highlight a {
+  color: #ffffff;
+  text-decoration: underline;
+}
