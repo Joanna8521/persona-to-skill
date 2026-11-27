@@ -6,6 +6,7 @@ existed.
     persona-to-skill fetch   <url> [--robots FILE]   may this be fetched
     persona-to-skill import  <file> --subject NAME --tier T2 --corpus DIR
     persona-to-skill gates   <bundle.json> --corpus DIR
+    persona-to-skill eval    <manifest.json> --run run.json [--corpus DIR]
     persona-to-skill package <bundle.json> --corpus DIR --out DIR
     persona-to-skill punct   [PATH ...]
 
@@ -29,6 +30,8 @@ from ._console import force_utf8
 from .contract import SOURCE_TIERS
 from .collect import fetch, importer
 from .deliver import package
+from .gates import holdout
+from . import eval as evaluation
 from . import validate_punct
 
 
@@ -155,6 +158,49 @@ def cmd_package(args) -> int:
     return 0
 
 
+# ── eval ────────────────────────────────────────────────
+
+def cmd_eval(args) -> int:
+    """Score a recorded run against an eval manifest.
+
+    This command does not answer anything and does not judge anything. It reads
+    two files written outside it and reports what they add up to. A harness that
+    produced its own observations would be measuring itself.
+    """
+    try:
+        manifest = evaluation.load_manifest(args.manifest)
+        run = evaluation.load_run(args.run)
+        reconciled = evaluation.reconcile(manifest, run)
+    except evaluation.EvalError as exc:
+        raise SystemExit(str(exc))
+
+    # The ground truth goes through G2 first, when a corpus is available. An
+    # eval suite whose quotes are not in the corpus is measuring against
+    # something nobody can check, and that has to fail before any number is
+    # printed rather than after.
+    if args.corpus:
+        verdict = evaluation.anchor_manifest(manifest, args.corpus)
+        print("  ground truth, through G2:")
+        _print_verdicts([verdict])
+        if not verdict.passed:
+            print("\n  the ground truth is not anchored, so no score follows.")
+            return 1
+
+    score = holdout.score(reconciled["items"])
+    verdict = holdout.check(reconciled["items"])
+
+    out = evaluation.render(score, reconciled, args.subject or "")
+    if args.out:
+        Path(args.out).write_text(out, encoding="utf-8")
+        print(f"  wrote {args.out}")
+    else:
+        print()
+        print(out)
+
+    _print_verdicts([verdict])
+    return 0 if verdict.passed else 1
+
+
 # ── punct ───────────────────────────────────────────────
 
 def cmd_punct(args) -> int:
@@ -196,6 +242,16 @@ def build_parser() -> argparse.ArgumentParser:
     k.add_argument("--corpus", required=True, metavar="DIR")
     k.add_argument("--out", required=True, metavar="DIR")
     k.set_defaults(func=cmd_package)
+
+    e = sub.add_parser("eval", help="score a recorded run against an eval manifest")
+    e.add_argument("manifest", help="the question set, with what the subject said")
+    e.add_argument("--run", required=True, metavar="FILE",
+                   help="the observations, recorded outside this tool")
+    e.add_argument("--corpus", metavar="DIR",
+                   help="check every ground truth against the corpus, through G2")
+    e.add_argument("--subject", metavar="NAME", help="for the report heading")
+    e.add_argument("--out", metavar="FILE", help="write the report here instead of stdout")
+    e.set_defaults(func=cmd_eval)
 
     u = sub.add_parser("punct", help="the punctuation gate on Markdown files")
     u.add_argument("paths", nargs="*", metavar="PATH")

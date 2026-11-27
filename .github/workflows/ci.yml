@@ -78,6 +78,88 @@ jobs:
             exit 1
           fi
 
+      # The worked example in examples/eval, actually run.
+      #
+      # examples/eval/README.md states what each of nine deliberate breaks
+      # does. Those were verified by hand once; this keeps them verified,
+      # because a documented behaviour nobody runs is the same shape as a gate
+      # nobody runs.
+      - name: the worked eval example
+        shell: bash
+        run: |
+          set -u
+          fail=0
+          E=examples/eval
+          run_eval () {
+            python3 -m persona_to_skill.cli eval "$E/manifest.json" \
+              --run "$E/run.json" --corpus "$E/corpus" > /tmp/e.out 2>&1
+          }
+
+          if ! run_eval; then
+            echo "::error::the example as committed does not pass"
+            cat /tmp/e.out
+            exit 1
+          fi
+          grep -q "Divergent-pool alignment: 90%" /tmp/e.out || {
+            echo "::error::the example no longer scores the 90% its README states"
+            grep "Divergent-pool" /tmp/e.out
+            fail=1
+          }
+          echo "  the committed example passes at 90%"
+
+          # Each break must turn it red, and must say the thing the README
+          # says it says. A red run for some other reason would still pass a
+          # check that only looked at the exit code.
+          break_it () {
+            local what="$1" code="$2" expect="$3"
+            rm -rf /tmp/E && cp -r "$E" /tmp/E
+            python3 -c "$code" || { echo "::error::could not apply: $what"; fail=1; return; }
+            if python3 -m persona_to_skill.cli eval /tmp/E/manifest.json \
+                 --run /tmp/E/run.json --corpus /tmp/E/corpus > /tmp/b.out 2>&1; then
+              echo "::error::STAYED GREEN: $what"
+              fail=1
+            elif ! grep -q "$expect" /tmp/b.out; then
+              echo "::error::red for the wrong reason: $what (expected '$expect')"
+              sed 's/^/    /' /tmp/b.out | tail -6
+              fail=1
+            else
+              echo "  red as the README says: $what"
+            fi
+          }
+
+          R='import json,pathlib;p=pathlib.Path("/tmp/E/run.json");d=json.loads(p.read_text(encoding="utf-8"))'
+          M='import json,pathlib;p=pathlib.Path("/tmp/E/manifest.json");d=json.loads(p.read_text(encoding="utf-8"))'
+          W='p.write_text(json.dumps(d,ensure_ascii=False),encoding="utf-8")'
+
+          break_it "a ground truth that is not in its source" \
+            "$M;d['items'][0]['subject_said']='Something the source never says.';$W" \
+            "does not appear verbatim"
+          break_it "every judgement non-blind" \
+            "$R;[i.update(blind=False) for i in d['items']];$W" \
+            "alignment: not measured"
+          break_it "no judge named" \
+            "$R;[i.update(judged_by='') for i in d['items']];$W" \
+            "alignment: not measured"
+          break_it "an observation recorded as a string" \
+            "$R;d['items'][0]['aligned']='yes';$W" \
+            "must be true, false, or null"
+          break_it "an observation recorded as 1" \
+            "$R;d['items'][0]['aligned']=1;$W" \
+            "must be true, false, or null"
+          break_it "everything flagged seen during extraction" \
+            "$M;[i.update(seen_in_extraction=True) for i in d['items']];$W" \
+            "alignment: not measured"
+          break_it "an answer to a question the manifest does not ask" \
+            "$R;d['items'].append(dict(d['items'][0], id='q99'));$W" \
+            "the manifest does not ask"
+
+          echo
+          if [ "$fail" -ne 0 ]; then
+            echo "the example no longer behaves the way its README says it does."
+            exit 1
+          fi
+          echo "the example behaves exactly as documented."
+
   lint:
     name: lint
     runs-on: ubuntu-latest

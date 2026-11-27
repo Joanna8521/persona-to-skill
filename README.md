@@ -292,6 +292,93 @@ guard went green, and every `fetch` invocation ended in a traceback. Hence
 than importing the module and stopping there.
 </details>
 
+## The eval harness
+
+G4 says what a holdout score has to clear. The harness says what a *recorded
+observation* has to look like before it counts as one, which is a different
+question and the one that decides whether the score means anything.
+
+```bash
+persona-to-skill eval examples/eval/manifest.json \
+    --run examples/eval/run.json \
+    --corpus examples/eval/corpus
+```
+
+A worked example lives in [`examples/eval/`](examples/eval/), with a table of
+nine deliberate breaks and what each one does. CI runs the example and applies
+seven of those breaks on every commit, because a documented behaviour nobody
+runs is the same shape as a gate nobody runs.
+
+**The harness never produces an observation.** It reads a manifest (the
+questions, and what the subject actually said, anchored to a source) and a run
+(what the reconstruction answered, what a baseline answered, whether each
+matched). Both come from outside. A harness that answered its own questions
+would be measuring itself, and the output would be a self-report wearing a
+percentage sign.
+
+### The field that actually protects the number
+
+Two fields carry the weight, and neither is bureaucracy.
+
+`judged_by`. Something decided "this answer matches what the subject said".
+That decision is a measurement, so it has an instrument, and an unnamed
+instrument cannot be checked. An item without it is not scored.
+
+`blind`. **The judge must not know which candidate came from the
+reconstruction.** A judge told "this one is the reconstruction" has been handed
+the result the experiment was supposed to produce, and LLM-as-judge is as
+susceptible to that as a person is. Non-blind items are counted and reported,
+never gated, which is the same treatment G4 already gives material that was
+seen during extraction. That is not a punishment: a non-blind judgement is
+evidence of something, just not of this.
+
+### Four ways a run stops counting, kept separate
+
+| | What it means |
+|---|---|
+| No entry in the run | The manifest asks it, nobody looked. Leaves the denominator |
+| No judge named | The instrument is unnamed, so the decision cannot be checked |
+| Judge was not blind | Counted, reported, never gated |
+| Seen during extraction | Alignment on it is evidence of nothing |
+
+Four different defects, four different fixes: write more items, name your
+judge, blind your judge, hold the material back. Collapsing them into one
+number would hide which one a run has, and a reconstruction should not be
+blamed for a thin question set while a thin question set should not pass as a
+reconstruction.
+
+An answer to a question the manifest does not ask is a **hard error**, not a
+warning. The manifest is the question set the subject's answers were pinned to.
+
+### The ground truth goes through G2 first
+
+An eval suite is not exempt from the gate for being the thing doing the
+measuring. Every `subject_said` is checked against the corpus before any number
+is printed, and G2 is reused rather than reimplemented: a second quote-matching
+routine would drift from the first, in the direction that makes a suite easier
+to write.
+
+### What the report shows, and what it refuses to show
+
+It leads with the divergent-pool figure and prints the consensus figure beside
+it, labelled as not gated, because the alternative is that someone quotes the
+flattering number by accident. `None` renders as "not measured", never as 0%:
+0% reads as "measured, and bad", which is a different and worse claim to make
+by accident.
+
+The report also **reconciles its own arithmetic**. The four unobserved reasons
+are the same items as the total, counted two ways. If they ever stop adding up,
+one of the two modules has changed what it counts, and the table would still
+look perfectly reasonable while being wrong, so the report says so instead of
+printing it.
+
+### What it cannot check
+
+Whether the questions were genuinely held back from extraction. Nothing in the
+files can establish that, and `seen_in_extraction` is the author's own
+declaration. A suite built from material the skill was trained on will score
+beautifully and mean nothing.
+
 ## Gates
 
 Five, each with negative tests that must go red on a deliberately broken input.

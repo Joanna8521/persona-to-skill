@@ -1,0 +1,130 @@
+{
+  "items": [
+    {
+      "id": "q1",
+      "reconstruction": "the reconstruction's answer",
+      "baseline": "the no-skill answer",
+      "aligned": true,
+      "baseline_aligned": false,
+      "judged_by": "a separate blind judging pass",
+      "blind": true
+    },
+    {
+      "id": "q2",
+      "reconstruction": "the reconstruction's answer",
+      "baseline": "the no-skill answer",
+      "aligned": true,
+      "baseline_aligned": false,
+      "judged_by": "a separate blind judging pass",
+      "blind": true
+    },
+    {
+      "id": "q3",
+      "reconstruction": "the reconstruction's answer",
+      "baseline": "the no-skill answer",
+      "aligned": true,
+      "baseline_aligned": false,
+      "judged_by": "a separate blind judging pass",
+      "blind": true
+    },
+    {
+      "id": "q4",
+      "reconstruction": "the reconstruction's answer",
+      "baseline": "the no-skill answer",
+      "aligned": true,
+      "baseline_aligned": false,
+      "judged_by": "a separate blind judging pass",
+      "blind": true
+    },
+    {
+      "id": "q5",
+      "reconstruction": "the reconstruction's answer",
+      "baseline": "the no-skill answer",
+      "aligned": true,
+      "baseline_aligned": false,
+      "judged_by": "a separate blind judging pass",
+      "blind": true
+    },
+    {
+      "id": "q6",
+      "reconstruction": "the reconstruction's answer",
+      "baseline": "the no-skill answer",
+      "aligned": true,
+      "baseline_aligned": false,
+      "judged_by": "a separate blind judging pass",
+      "blind": true
+    },
+    {
+      "id": "q7",
+      "reconstruction": "the reconstruction's answer",
+      "baseline": "the no-skill answer",
+      "aligned": true,
+      "baseline_aligned": false,
+      "judged_by": "a separate blind judging pass",
+      "blind": true
+    },
+    {
+      "id": "q8",
+      "reconstruction": "the reconstruction's answer",
+      "baseline": "the no-skill answer",
+      "aligned": true,
+      "baseline_aligned": false,
+      "judged_by": "a separate blind judging pass",
+      "blind": true
+    },
+    {
+      "id": "q9",
+      "reconstruction": "the reconstruction's answer",
+      "baseline": "the no-skill answer",
+      "aligned": true,
+      "baseline_aligned": false,
+      "judged_by": "a separate blind judging pass",
+      "blind": true
+    },
+    {
+      "id": "q10",
+      "reconstruction": "the reconstruction's answer",
+      "baseline": "the no-skill answer",
+      "aligned": false,
+      "baseline_aligned": false,
+      "judged_by": "a separate blind judging pass",
+      "blind": true
+    },
+    {
+      "id": "q11",
+      "reconstruction": "r",
+      "baseline": "b",
+      "aligned": true,
+      "baseline_aligned": true,
+      "judged_by": "a separate blind judging pass",
+      "blind": true
+    },
+    {
+      "id": "q12",
+      "reconstruction": "r",
+      "baseline": "b",
+      "aligned": true,
+      "baseline_aligned": true,
+      "judged_by": "a separate blind judging pass",
+      "blind": true
+    },
+    {
+      "id": "q13",
+      "reconstruction": "r",
+      "baseline": "b",
+      "aligned": true,
+      "baseline_aligned": true,
+      "judged_by": "a separate blind judging pass",
+      "blind": true
+    },
+    {
+      "id": "q14",
+      "reconstruction": "r",
+      "baseline": "b",
+      "aligned": true,
+      "baseline_aligned": true,
+      "judged_by": "a separate blind judging pass",
+      "blind": true
+    }
+  ]
+}

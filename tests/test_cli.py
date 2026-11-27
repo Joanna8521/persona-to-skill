@@ -77,7 +77,7 @@ def test_every_subcommand_is_reachable():
     parser = cli.build_parser()
     actions = [a for a in parser._actions if hasattr(a, "choices") and a.choices]
     names = sorted(set().union(*(set(a.choices) for a in actions)))
-    assert names == ["fetch", "gates", "import", "package", "punct"]
+    assert names == ["eval", "fetch", "gates", "import", "package", "punct"]
 
 
 # ── fetch ───────────────────────────────────────────────

@@ -136,6 +136,56 @@ HOLDOUT_MIN_ITEMS = 10
 # the total reads.
 HOLDOUT_MIN_DIVERGENT_ITEMS = 5
 
+# ----------------------------------------------------------- the eval harness
+# G4 says what a holdout score has to clear. This says what a RECORDED
+# observation has to look like before it counts as one, which is a different
+# question and the one that decides whether the score means anything.
+#
+# The harness never produces an observation. It reads a manifest (the questions,
+# and what the subject actually said, anchored to a source) and a run (what the
+# reconstruction answered, what a baseline answered, and whether each matched).
+# Both come from outside. A harness that answered its own questions would be
+# measuring itself, and the number would be a self-report wearing a percentage
+# sign.
+#
+# Two fields carry the weight, and neither is bureaucracy.
+#
+# JUDGED_BY. Someone or something decided "this answer matches what the subject
+# said". That decision is a measurement, so it has an instrument, and an
+# unnamed instrument cannot be checked. An item without it is not scored.
+#
+# BLIND. The judge must not know which candidate came from the reconstruction
+# and which from the baseline. This is the one that actually protects the
+# number: a judge told "this one is the reconstruction" has been handed the
+# answer the experiment is supposed to produce, and LLM-as-judge is as
+# susceptible to that as a person. Non-blind items are counted and reported,
+# never gated, which is the same treatment G4 already gives items that were
+# seen during extraction. Not a punishment: a non-blind judgement is evidence
+# of something, just not of this.
+EVAL_MANIFEST_REQUIRED_FIELDS = (
+    # The question, held back from extraction, that the subject has answered.
+    "id", "question",
+    # What the subject actually said, and where. The ground truth has to be
+    # anchorable or the whole comparison rests on an unverified claim, which is
+    # the failure this project exists to make impossible.
+    "source_id", "subject_said",
+)
+
+EVAL_RUN_REQUIRED_FIELDS = (
+    "id",
+    # The two answers. Kept verbatim so a reader can disagree with the judge.
+    "reconstruction", "baseline",
+    # The judgements. Explicit booleans or null; see G4 on UNKNOWN.
+    "aligned", "baseline_aligned",
+    # Who judged, and whether they were blind to which answer was which.
+    "judged_by", "blind",
+)
+
+# How a run item may answer "did this match". A string is refused on purpose:
+# "yes" and "probably" are not observations, and coercing either would invent
+# the measurement this module promises never to estimate.
+EVAL_OBSERVATION_VALUES = (True, False, None)
+
 # -------------------------------------------------------- impersonation forms
 # PUBLISHED scope: these block. They turn a cited reconstruction into a stand-in
 # for a person, which is the line the digital-replica statutes draw and the line
@@ -524,6 +574,9 @@ FROZEN = (
     "STATEMENT_CLASSES",
     "ASSUMPTION_STATUSES",
     "THRESHOLD_NUMBER",
+    "EVAL_MANIFEST_REQUIRED_FIELDS",
+    "EVAL_RUN_REQUIRED_FIELDS",
+    "EVAL_OBSERVATION_VALUES",
     "PUNCT_CHECKED_SUFFIXES",
     "PUNCT_CHECKED_DIRS",
     "SEATS",
