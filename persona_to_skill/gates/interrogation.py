@@ -39,14 +39,15 @@ from typing import Any, Dict, List
 
 from ..contract import (
     ASSUMPTION_STATUSES,
-    CONDITIONAL_MARKERS,
     CONFIDENCE_REQUIRING_GAPS_NAMED,
     CONFIDENCE_REQUIRING_NO_GAPS,
+    GAP_PERIPHERAL_KEY,
     MEMO_EMPTIABLE_FIELDS,
     EVASION_PHRASES,
     HEDGE_MARKERS,
     MEMO_REQUIRED_FIELDS,
     STATEMENT_CLASSES,
+    THRESHOLD_NUMBER,
     VERDICTS,
     VERDICTS_REQUIRING_FLIP_CONDITION_KNOWN,
 )
@@ -79,6 +80,26 @@ def _text_of(value: Any) -> str:
 def _found(text: str, needles) -> List[str]:
     low = text.lower()
     return [n for n in needles if (n.lower() in low)]
+
+
+def _gaps_bearing_on_decision(gaps: Any) -> List[str]:
+    """Which gaps count against a confident verdict.
+
+    A gap is peripheral only when it says so. A bare string, or an object that
+    omits the key, bears on the decision -- fail closed, so the way to reconcile
+    a gap with high confidence is to mark it, not to remove it.
+    """
+    out: List[str] = []
+    if not isinstance(gaps, (list, tuple)):
+        gaps = [gaps] if gaps else []
+    for g in gaps:
+        if isinstance(g, dict):
+            if g.get(GAP_PERIPHERAL_KEY) is False:
+                continue
+            out.append(_text_of(g.get("gap") or g.get("text") or g))
+        elif g:
+            out.append(_text_of(g))
+    return out
 
 
 def check(memo: Dict[str, Any] | None,
@@ -117,23 +138,35 @@ def check(memo: Dict[str, Any] | None,
         elif _empty(memo.get(key)) and key not in MEMO_EMPTIABLE_FIELDS:
             errors.append(f"required field {key!r} ({zh}) is empty")
 
-    # --------------------------------------------- R2  no field filled by evasion
+    # ------------------------------------------------- R2  evasion, as a floor
+    # Lexical, therefore a floor rather than a detector: the list is public and
+    # so gameable, and it trips on mention as well as use. It blocks only where
+    # the field's whole content is the phrase, which is unambiguous; otherwise
+    # it warns. See the note on EVASION_PHRASES for why no structural
+    # replacement is offered instead of this honest limit.
     for key, zh in MEMO_REQUIRED_FIELDS.items():
         text = _text_of(memo.get(key))
-        if not text.strip():
+        stripped = text.strip()
+        if not stripped:
             continue
         hits = _found(text, EVASION_PHRASES)
-        if hits:
-            if _found(text, CONDITIONAL_MARKERS):
-                warnings.append(
-                    f"{key} ({zh}) uses {hits[0]!r} but does go on to state conditions; "
-                    "check the conditions actually cover the case"
-                )
-            else:
-                errors.append(
-                    f"{key} ({zh}) is filled with {hits[0]!r}, which decides nothing. "
-                    "Expand it into concrete conditions."
-                )
+        if not hits:
+            continue
+        bare = all(
+            stripped.strip("。．.,，、;；:：!！?？ \t\n「」\"'()（）") .lower() == h.lower()
+            for h in hits[:1]
+        )
+        if bare:
+            errors.append(
+                f"{key} ({zh}) contains nothing but {hits[0]!r}, which decides nothing. "
+                "Expand it into concrete conditions."
+            )
+        else:
+            warnings.append(
+                f"{key} ({zh}) uses {hits[0]!r}. If that phrase is carrying the field, "
+                "expand it into concrete conditions; this check is lexical and cannot "
+                "tell a dodge from a mention."
+            )
 
     # ------------------------- R3  flip condition unknown forbids a committing verdict
     flip = memo.get("flip_condition")
@@ -143,8 +176,16 @@ def check(memo: Dict[str, Any] | None,
     if isinstance(flip, dict):
         if _empty(flip.get("quantity")):
             errors.append("flip_condition names no quantity: what number decides this")
-        if _empty(flip.get("threshold")):
+        threshold = flip.get("threshold")
+        if _empty(threshold):
             errors.append("flip_condition names no threshold for its quantity")
+        elif not THRESHOLD_NUMBER.search(_text_of(threshold)):
+            # Structural, and sound: a threshold without a number is not one.
+            errors.append(
+                f"flip_condition threshold {_text_of(threshold)!r} contains no number. "
+                "A threshold is the value the quantity is compared against; without one "
+                "there is nothing to go and find out."
+            )
         known = flip.get("known")
         if not isinstance(known, bool):
             errors.append("flip_condition.known must be true or false: is the number in hand")
@@ -171,12 +212,18 @@ def check(memo: Dict[str, Any] | None,
             errors.append(f"confidence.level {level} is outside 0 to 1")
         if isinstance(conf, dict) and _empty(conf.get("rationale")):
             errors.append("confidence states a level with no rationale for why that level")
-        if float(level) >= CONFIDENCE_REQUIRING_NO_GAPS and not _empty(memo.get("evidence_gaps")):
-            errors.append(
-                f"confidence {float(level):.0%} is claimed while evidence_gaps is not empty. "
-                "That is incoherent rather than optimistic: either the gaps do not bear on "
-                "the decision, and belong elsewhere, or the confidence is lower than stated."
-            )
+        if float(level) >= CONFIDENCE_REQUIRING_NO_GAPS:
+            bearing = _gaps_bearing_on_decision(memo.get("evidence_gaps"))
+            if bearing:
+                errors.append(
+                    f"confidence {float(level):.0%} is claimed while "
+                    f"{len(bearing)} evidence gap(s) bear on the decision: "
+                    + "; ".join(bearing[:3])
+                    + ". Either mark a gap "
+                    f"{{{GAP_PERIPHERAL_KEY!r}: false}} where it genuinely does not affect "
+                    "this decision, or state the lower confidence. Deleting the gap is not "
+                    "the third option."
+                )
         # The mirror image, and the reason an empty gap list cannot simply be
         # left blank to get past R1. Unsure about something means something is
         # missing; naming it is the whole job.

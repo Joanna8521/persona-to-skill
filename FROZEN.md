@@ -6,6 +6,45 @@ here, never an in-place edit. `tests/test_contract_frozen.py` asserts them.
 
 ## v0.1.0 (unreleased)
 
+### Amendment: three corrections to G5, before it ever shipped
+
+**`conflicts` is no longer emptiable.** It was listed alongside `evidence_gaps`
+without being thought about. The two are not alike: "no evidence gaps" can be
+true, but the seats that produce a memo are set against each other on purpose,
+so a run that surfaces no conflict has not found agreement, it has found that a
+seat did not hold its position. Where opposed positions genuinely converge,
+saying why is content, so the field is non-empty either way. Conflict is also
+where the value is: it marks the spot where two models of the world differ,
+which is the thing worth digging into.
+
+**Confidence now conflicts only with a gap that bears on the decision.** The
+first version forbade any open gap above `CONFIDENCE_REQUIRING_NO_GAPS`, which
+was wrong twice. It blocked a reasonable memo — high confidence with a minor
+gap noted — and the cheapest way to satisfy it was to delete the gap, so the
+rule paid people to do the one thing the schema exists to prevent. The
+combination is now explicit rather than forbidden: a gap is either marked
+`{"bears_on_decision": false}` or it counts against the confidence. An unmarked
+gap counts as bearing, so marking is the cheap path and deleting still hits the
+opposite rule. Added `GAP_PERIPHERAL_KEY`.
+
+**The evasion word list is a floor, not a gate.** It is lexical, so it is
+gameable — the list is public and "整體來看需要權衡各方面因素" is the same dodge
+in words it does not hold — and it trips on mention as well as use ("不能用綜合
+評估帶過" is a correct sentence). It now blocks only where a field's whole
+content is the phrase, and warns otherwise, saying in the warning that it
+cannot tell a dodge from a mention.
+
+A structural replacement was considered and rejected rather than invented: no
+reliable test separates a dodge from a specific statement, because "the unit
+economics never reach breakeven" has neither a condition nor a number and is
+not evasive at all. One structural check was added where it *is* sound —
+`THRESHOLD_NUMBER` requires a flip-condition threshold to contain a number,
+since a threshold is the value a quantity is compared against and without one
+there is nothing to go and find out.
+
+`CONDITIONAL_MARKERS` was removed. R2 no longer uses it, and an unused frozen
+value is false furniture: it suggests a check that is not running.
+
 ### Amendment: holdout is scored in two pools
 
 `HOLDOUT_MIN_ALIGNMENT` is unchanged at `0.80`, but **what it is measured over

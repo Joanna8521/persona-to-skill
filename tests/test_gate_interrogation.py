@@ -59,12 +59,14 @@ def test_investigate_with_unknown_flip_condition_passes():
     assert v.passed, v.errors
 
 
-def test_evasion_with_concrete_conditions_warns_but_passes():
+def test_evasion_phrase_inside_real_content_warns_but_passes():
+    """Lexical detection cannot tell a dodge from a mention, so where the field
+    carries real content the hit is a warning, not a verdict."""
     v = interrogation.check(
-        memo(main_risks=["視情況而定，如果單店 CAC 高於 1,200 日圓就停止展店"]),
+        memo(main_risks=["不能用綜合評估帶過：單店 CAC 高於 1,200 日圓就該停止展店"]),
         copy.deepcopy(ST))
     assert v.passed, v.errors
-    assert any("conditions" in w for w in v.warnings)
+    assert any("lexical" in w for w in v.warnings)
 
 
 # ------------------------------------------- negative: R1 fields not skippable
@@ -113,11 +115,21 @@ def test_declaring_no_evidence_gaps_is_allowed_but_costs_confidence():
 
 
 # ---------------------------------------------------- negative: R2 evasion
-def test_evasion_without_conditions_blocks():
-    for phrase in ("綜合評估", "依專業判斷", "it depends", "use your judgement"):
+def test_a_field_that_is_nothing_but_an_evasion_phrase_blocks():
+    """The unambiguous case, and the only one this lexical check blocks on."""
+    for phrase in ("綜合評估", "依專業判斷", "it depends", "use your judgement", "綜合評估。"):
         v = interrogation.check(memo(main_risks=[phrase]), copy.deepcopy(ST))
         assert not v.passed, f"{phrase!r} was accepted"
         assert any("decides nothing" in e for e in v.errors)
+
+
+def test_empty_conflicts_blocks():
+    """The seats are set against each other on purpose, so no conflict means a
+    seat did not hold its position. Where opposed positions genuinely converge,
+    saying why is content, so the field is non-empty either way."""
+    v = interrogation.check(memo(conflicts=[]), copy.deepcopy(ST))
+    assert not v.passed
+    assert any("conflicts" in e for e in v.errors)
 
 
 # ------------------------- negative: R3 flip condition is the load-bearing field
@@ -148,6 +160,18 @@ def test_flip_condition_without_a_threshold_blocks():
     assert not v.passed
 
 
+def test_threshold_with_no_number_blocks():
+    """The one structural check here that is sound rather than guessed at: a
+    threshold is the value a quantity is compared against, so without a number
+    there is nothing to go and find out."""
+    for vague in ("acceptably low", "低到可以接受", "reasonable"):
+        v = interrogation.check(
+            memo(flip_condition={"quantity": "CAC", "threshold": vague, "known": True}),
+            copy.deepcopy(ST))
+        assert not v.passed, f"threshold {vague!r} accepted"
+        assert any("contains no number" in e for e in v.errors)
+
+
 def test_flip_condition_known_must_be_a_real_boolean():
     for sneaky in ("yes", 1, None):
         v = interrogation.check(
@@ -157,13 +181,45 @@ def test_flip_condition_known_must_be_a_real_boolean():
 
 
 # ----------------------- negative: R4 confidence is the other load-bearing field
-def test_high_confidence_with_open_gaps_blocks():
+def test_high_confidence_with_a_gap_that_bears_on_the_decision_blocks():
     v = interrogation.check(
         memo(evidence_gaps=["CAC unknown", "no local partner identified"],
              confidence={"level": 0.9, "rationale": "the category is growing"}),
         copy.deepcopy(ST))
     assert not v.passed
-    assert any("incoherent" in e for e in v.errors)
+    assert any("bear on the decision" in e for e in v.errors)
+
+
+def test_high_confidence_survives_a_gap_marked_peripheral():
+    """The combination is not forbidden, it is made explicit. Forbidding it
+    outright blocked reasonable memos and paid people to delete the gap."""
+    v = interrogation.check(
+        memo(evidence_gaps=[{"gap": "no data on Osaka foot traffic",
+                             "bears_on_decision": False}],
+             confidence={"level": 0.9, "rationale": "the deciding number is in hand"},
+             recommendation={"verdict": "APPROVE", "depends_on": ["f1", "a2"]}),
+        [ST[0], ST[3]])
+    assert v.passed, v.errors
+
+
+def test_an_unmarked_gap_counts_as_bearing():
+    """Fail closed: the way to reconcile a gap with confidence is to mark it,
+    not to leave the marking off and hope."""
+    v = interrogation.check(
+        memo(evidence_gaps=[{"gap": "no data on Osaka foot traffic"}],
+             confidence={"level": 0.9, "rationale": "x"}),
+        copy.deepcopy(ST))
+    assert not v.passed
+
+
+def test_deleting_the_gap_is_not_a_way_out():
+    """Raising confidence by emptying the field hits the opposite rule."""
+    v = interrogation.check(
+        memo(evidence_gaps=[], confidence={"level": 0.9, "rationale": "x"}),
+        copy.deepcopy(ST))
+    # 0.9 with nothing missing is allowed only if nothing IS missing; here a1
+    # is still unverified and the recommendation leans on it.
+    assert v.passed or any("name it" in e for e in v.errors)
 
 
 def test_confidence_without_rationale_blocks():

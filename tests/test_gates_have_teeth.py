@@ -61,7 +61,7 @@ GOOD_MEMO = {
     "decision": "d", "options": ["a", "b", "c"], "known_facts": ["f"],
     "consensus": ["c"], "conflicts": ["x"], "key_assumptions": ["a1"],
     "main_risks": ["r"], "evidence_gaps": ["g"],
-    "flip_condition": {"quantity": "q", "threshold": "t", "known": True},
+    "flip_condition": {"quantity": "cost per unit", "threshold": "under 40", "known": True},
     "recommendation": {"verdict": "REVISE", "depends_on": ["f1"]},
     "confidence": {"level": 0.6, "rationale": "why"}, "next_actions": ["n"],
 }
@@ -113,7 +113,8 @@ BROKEN = [
            "source_id": "s1"}])),
     ("G5-interrogation", "a committing verdict while the deciding number is unknown",
      lambda: interrogation.check(
-         GOOD_MEMO | {"flip_condition": {"quantity": "q", "threshold": "t", "known": False}},
+         GOOD_MEMO | {"flip_condition": {"quantity": "cost per unit",
+                                         "threshold": "under 40", "known": False}},
          GOOD_STATEMENTS)),
     ("G5-interrogation", "high confidence alongside open evidence gaps",
      lambda: interrogation.check(
@@ -121,6 +122,13 @@ BROKEN = [
          GOOD_STATEMENTS)),
     ("G5-interrogation", "a memo with no classified statements",
      lambda: interrogation.check(GOOD_MEMO, None)),
+    ("G5-interrogation", "a flip-condition threshold with no number in it",
+     lambda: interrogation.check(
+         GOOD_MEMO | {"flip_condition": {"quantity": "cost per unit",
+                                         "threshold": "acceptably low", "known": True}},
+         GOOD_STATEMENTS)),
+    ("G5-interrogation", "an empty conflicts field",
+     lambda: interrogation.check(GOOD_MEMO | {"conflicts": []}, GOOD_STATEMENTS)),
 ]
 
 

@@ -70,11 +70,28 @@ def test_memo_schema_frozen():
         "recommendation", "confidence", "next_actions",
     )
     assert c.MEMO_LOAD_BEARING_FIELDS == ("flip_condition", "confidence")
-    assert c.MEMO_EMPTIABLE_FIELDS == ("evidence_gaps", "conflicts")
+    assert c.MEMO_EMPTIABLE_FIELDS == ("evidence_gaps",)
     assert c.VERDICTS == ("APPROVE", "REVISE", "INVESTIGATE", "DEFER")
     assert c.VERDICTS_REQUIRING_FLIP_CONDITION_KNOWN == ("APPROVE", "REVISE")
     assert c.CONFIDENCE_REQUIRING_NO_GAPS == 0.70
     assert c.CONFIDENCE_REQUIRING_GAPS_NAMED == 0.70
+    assert c.GAP_PERIPHERAL_KEY == "bears_on_decision"
+
+
+def test_conflicts_cannot_be_emptied():
+    """A run that surfaces no conflict has not found agreement, it has found
+    that a seat did not hold its position. Conflict is also where the value is:
+    it marks where two models of the world differ."""
+    assert "conflicts" not in c.MEMO_EMPTIABLE_FIELDS
+    assert "conflicts" in c.MEMO_REQUIRED_FIELDS
+
+
+def test_threshold_structural_check_exists():
+    """The lexical lists are a floor. This is the check that actually holds: a
+    threshold with no number in it is not a threshold."""
+    assert c.THRESHOLD_NUMBER.search("JPY 1,200")
+    assert not c.THRESHOLD_NUMBER.search("acceptably low")
+    assert not c.THRESHOLD_NUMBER.search("低到可以接受")
 
 
 def test_statement_classes_frozen():

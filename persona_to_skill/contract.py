@@ -17,6 +17,8 @@ outside.
 """
 from __future__ import annotations
 
+import re
+
 CONTRACT_VERSION = "persona-to-skill/contract/v1"
 
 # ------------------------------------------------------------- output scope
@@ -226,7 +228,15 @@ MEMO_LOAD_BEARING_FIELDS = ("flip_condition", "confidence")
 # confidence with nothing missing is as incoherent as high confidence with
 # plenty missing, which makes an empty gap list expensive to claim falsely in
 # either direction.
-MEMO_EMPTIABLE_FIELDS = ("evidence_gaps", "conflicts")
+MEMO_EMPTIABLE_FIELDS = ("evidence_gaps",)
+
+# conflicts is deliberately NOT emptiable. The seats that produce a memo are
+# set against each other on purpose -- one argues for, one argues against -- so
+# a run that surfaces no conflict has not found agreement, it has found that a
+# seat did not hold its position. Where opposed positions genuinely converge,
+# that needs saying, and saying it is content, so the field is non-empty either
+# way. Conflict is also where the value is: it marks the spot where two models
+# of the world differ, which is the thing worth digging into.
 
 # Below this, declaring no evidence gaps is incoherent: something is making you
 # unsure, and naming it is the whole job.
@@ -240,13 +250,43 @@ VERDICTS = ("APPROVE", "REVISE", "INVESTIGATE", "DEFER")
 # a straight face is a result, not a failure to produce one.
 VERDICTS_REQUIRING_FLIP_CONDITION_KNOWN = ("APPROVE", "REVISE")
 
-# Claiming this much confidence while evidence gaps are still open is not a
-# judgement call, it is incoherent. One of the two has to give.
+# Claiming this much confidence while a gap that BEARS ON THE DECISION is still
+# open is not a judgement call, it is incoherent.
+#
+# An earlier version forbade any open gap at all above this level, which was
+# wrong twice over. It blocked a perfectly reasonable memo -- high confidence
+# with a minor gap noted -- and worse, the way to satisfy it was to delete the
+# gap, so the rule paid people to do the one thing the schema exists to stop.
+#
+# So the combination is not forbidden, it is made explicit: a gap is either
+# marked as not bearing on the decision, or it counts against the confidence.
+# Marking is cheaper than deleting, which puts the incentive back the right way
+# round. An unmarked gap counts as bearing -- fail closed.
 CONFIDENCE_REQUIRING_NO_GAPS = 0.70
 
-# Evasion. A field filled with one of these is a field not filled: "综合评估"
-# means "work it out yourself". Permitted only when the same field goes on to
-# spell out concrete conditions, which CONDITIONAL_MARKERS detects.
+# How an evidence gap says it is peripheral. Absent, a gap bears on the
+# decision.
+GAP_PERIPHERAL_KEY = "bears_on_decision"
+
+# Evasion. "綜合評估" means "work it out yourself", so a field whose content is
+# that phrase is a field not filled.
+#
+# Read what this list can and cannot do. It is lexical, so it is a FLOOR, not a
+# detector of evasion:
+#   * it is gameable -- the list is public, and "整體來看需要權衡各方面因素" is
+#     the same dodge in words the list does not hold;
+#   * it false-positives on mention rather than use -- "不能用綜合評估帶過" is
+#     a correct sentence that trips it.
+# A structural replacement was considered and rejected: there is no reliable
+# test separating a dodge from a specific statement, because "the unit
+# economics never reach breakeven" contains neither a condition nor a number
+# and is not evasive at all.
+#
+# So a lexical hit WARNS rather than blocks, except where the field's content
+# is nothing but the phrase, which is unambiguous. The checks that block are
+# the ones that can be verified: a threshold has to contain a number, a
+# confidence level has to be numeric. Inventing a second rule to prop up the
+# first would only move the guesswork somewhere less visible.
 EVASION_PHRASES = (
     "綜合評估", "自己判斷", "看情況決定", "依專業判斷", "彈性處理", "視情況而定",
     "見機行事", "酌情處理",
@@ -254,7 +294,6 @@ EVASION_PHRASES = (
     "holistically", "weigh all factors",
 )
 
-CONDITIONAL_MARKERS = ("如果", "若", "當", "則", "→", "->", "if ", "when ", "unless ")
 
 # False confidence about a fact, as distinct from evasion of a judgement. These
 # read as knowing and mean not knowing, which is why they cannot appear in
@@ -268,6 +307,10 @@ HEDGE_MARKERS = (
 )
 
 STATEMENT_CLASSES = ("FACT", "INFERENCE", "ASSUMPTION", "RECOMMENDATION", "UNKNOWN")
+
+# A threshold with no number in it is not a threshold. One of the few places a
+# structural check is sound rather than guessed at.
+THRESHOLD_NUMBER = re.compile(r"\d")
 
 # A recommendation must name the assumptions it rests on, at the recommendation.
 # Listing them three fields away does not work: nobody reading a recommendation
@@ -310,6 +353,7 @@ FROZEN = (
     "CONFIDENCE_REQUIRING_NO_GAPS",
     "CONFIDENCE_REQUIRING_GAPS_NAMED",
     "MEMO_EMPTIABLE_FIELDS",
+    "GAP_PERIPHERAL_KEY",
     "EVASION_PHRASES",
     "HEDGE_MARKERS",
 )
