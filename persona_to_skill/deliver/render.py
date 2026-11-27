@@ -273,7 +273,7 @@ def holdout_report_md(bundle: Dict[str, Any]) -> str:
            f"| Seen during extraction, excluded | {s['seen_excluded']} |", ""]
     gated = s["gated_alignment"]
     out.append(f"**Gated alignment: "
-               f"{'not measured' if gated is None else f'{gated:.0%}'}**, on the questions "
+               f"{holdout_gate.format_alignment(gated)}**, on the questions "
                "where a model with no reconstruction answers wrongly. The consensus pool "
                "is excluded on purpose: a reconstruction answers those correctly whether "
                "or not it learned anything.\n")

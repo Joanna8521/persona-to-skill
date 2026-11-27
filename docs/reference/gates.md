@@ -296,3 +296,32 @@ Every statement carries one of four classes, and each class owes something:
     INFERENCE       what it was derived from
     ASSUMPTION      a verification status
     RECOMMENDATION  the statements it rests on, named at the recommendation
+
+## `B-reconcile`
+
+`persona_to_skill/gates/reconcile.py`
+
+B-reconcile: the figures in the deliverable against the computed ones.
+
+Three places in a bundle state the same measurement, and until this gate
+existed nothing compared them:
+
+  * `holdout`, the observations G4 scores;
+  * `holdout_by_seat`, the per-seat slices B-profile scores;
+  * `disclosure.holdout_alignment`, free text that the rendered SKILL.md
+    publishes under the label "Measured alignment where a model with no
+    reconstruction answers wrongly".
+
+A worked example in this repository shipped an archive whose holdout-report
+said 100% over 5 divergent items while its SKILL.md disclosed 92% over 12,
+and whose per-seat lists totalled fifteen observations against a global set
+of twelve. Nine gates passed. Every one of those numbers reads as measured,
+and a reader has no way to tell which is.
+
+The per-seat lists are slices of one run: the eval manifest gives each item
+exactly one seat, so the slices partition the whole. Comparing them as
+multisets of (aligned, baseline_aligned) catches a list written twice without
+demanding the two be in the same order, which would be a different claim.
+
+Fails closed. A bundle with no holdout cannot be reconciled, and G4 already
+refuses that case; saying nothing here would turn the absence into a pass.

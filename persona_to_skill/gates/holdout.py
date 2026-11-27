@@ -73,6 +73,17 @@ def _ratio(aligned: int, scored: int) -> float | None:
     return (aligned / scored) if scored else None
 
 
+def format_alignment(ratio: float | None) -> str:
+    """The one way an alignment ratio is written down.
+
+    The report printed `f"{gated:.0%}"` and B-reconcile compares what the
+    disclosure says against the computed figure. Two spellings of the same
+    number would let the gate pass text the report contradicts, which is the
+    failure the gate exists to catch.
+    """
+    return "not measured" if ratio is None else f"{ratio:.0%}"
+
+
 def score(items: List[Dict[str, Any]]) -> Dict[str, Any]:
     """Score holdout items by pool, deriving nothing that was not recorded.
 

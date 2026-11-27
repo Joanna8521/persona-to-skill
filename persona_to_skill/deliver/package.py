@@ -40,6 +40,7 @@ from ..gates import anchor as anchor_gate
 from ..gates import consent as consent_gate
 from ..gates import disclosure as disclosure_gate
 from ..gates import holdout as holdout_gate
+from ..gates import reconcile as reconcile_gate
 from ..gates import interrogation as interrogation_gate
 from . import render
 
@@ -111,6 +112,10 @@ def run_gates(bundle: Dict[str, Any], corpus_dir: Path,
         sensitivity_gate.check(bundle.get("sensitivity")),
         profile_gate.check(bundle.get("holdout_by_seat")),
         holdout_gate.check(bundle.get("holdout")),
+        # Three places state the same measurement and nothing compared them.
+        reconcile_gate.check(bundle.get("holdout"),
+                             bundle.get("holdout_by_seat"),
+                             bundle.get("disclosure"), scope),
     ]
 
     # G2 reconciles every claim the seats make, plus both sides of every
@@ -139,8 +144,14 @@ def run_gates(bundle: Dict[str, Any], corpus_dir: Path,
 
     # G3 reads the rendered SKILL.md, because that is the text that could
     # impersonate and the text a reader sees.
+    # G2 exempts a claim marked `inference` from the quote check on the
+    # condition that the output labels it. G3 is where that condition is
+    # enforced, so it needs the claims, not just the text.
+    inference_claims = [e for e in seats_gate.all_entries(bundle)
+                        if e.get("attribution") == "inference"]
     verdicts.append(disclosure_gate.check(
-        rendered.get("SKILL.md", ""), name, scope, bundle.get("disclosure")))
+        rendered.get("SKILL.md", ""), name, scope, bundle.get("disclosure"),
+        inference_claims))
 
     # G5 only when a memo was produced; a reconstruction need not have run a
     # deliberation yet.
@@ -218,6 +229,19 @@ def write_zip(rendered: Dict[str, str], inner: str, out_path: Path) -> List[str]
     return errs
 
 
+def _existing_archive(bundle: Dict[str, Any], out_dir: Path) -> Optional[Path]:
+    """The archive this bundle WOULD have been written to, if it is there."""
+    version = str(bundle.get("version") or "").strip()
+    if not version:
+        return None
+    label = version if version.startswith("v") else f"v{version}"
+    try:
+        candidate = out_dir / f"{slug(bundle)}-method-{label}.zip"
+    except Exception:  # noqa: BLE001  - a bad slug is G-slug's finding, not this one
+        return None
+    return candidate if candidate.exists() else None
+
+
 def run(bundle: Dict[str, Any], corpus_dir: str | Path,
         out_dir: str | Path) -> Tuple[Optional[Path], List[Verdict], List[str]]:
     """Render, gate, and package only if every gate passed.
@@ -237,7 +261,18 @@ def run(bundle: Dict[str, Any], corpus_dir: str | Path,
 
     failed = [v for v in verdicts if not v.passed]
     if failed:
-        return None, verdicts, [f"{v.gate}: {e}" for v in failed for e in v.errors]
+        errors = [f"{v.gate}: {e}" for v in failed for e in v.errors]
+        # Nothing is written, and the output directory is not touched. If a
+        # previous run with this slug and version succeeded, its archive is
+        # still sitting there and looks exactly like a build of this bundle.
+        # Deleting it would destroy an artifact the user may still want, so
+        # it is named instead.
+        stale = _existing_archive(bundle, out_dir)
+        if stale is not None:
+            errors.append(
+                f"nothing was written, and {stale.name} is still in "
+                f"{out_dir} from an earlier run. It is NOT this bundle.")
+        return None, verdicts, errors
 
     version = str(bundle.get("version") or "").strip()
     if not version:

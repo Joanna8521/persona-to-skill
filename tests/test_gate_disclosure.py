@@ -23,7 +23,7 @@ GOOD_DISCLOSURE = {
 
 # ------------------------------------------------------- positive: PUBLISHED
 def test_clean_published_output_passes():
-    v = disclosure.check(GOOD_TEXT, "A. Example", "PUBLISHED", GOOD_DISCLOSURE)
+    v = disclosure.check(GOOD_TEXT, "A. Example", "PUBLISHED", GOOD_DISCLOSURE, [])
     assert v.passed, v.errors
 
 
@@ -52,14 +52,14 @@ def test_private_warning_does_not_moralize():
 
 # ------------------------- negative: impersonation blocks when PUBLISHED only
 def test_published_impersonation_blocks():
-    v = disclosure.check(IMPERSONATING, "A. Example", "PUBLISHED", GOOD_DISCLOSURE)
+    v = disclosure.check(IMPERSONATING, "A. Example", "PUBLISHED", GOOD_DISCLOSURE, [])
     assert not v.passed
     assert v.stats["impersonation_hits"] >= 1
 
 
 def test_published_family_name_alone_blocks():
     v = disclosure.check("You are Example, the negotiator.", "A. Example",
-                         "PUBLISHED", GOOD_DISCLOSURE)
+                         "PUBLISHED", GOOD_DISCLOSURE, [])
     assert not v.passed
 
 
@@ -68,37 +68,37 @@ def test_published_chinese_impersonation_blocks():
                  "扮演王小明回答以下問題。",
                  "模仿王小明的語氣寫一段話。",
                  "以王小明的身分回答客戶。"):
-        v = disclosure.check(text, "王小明", "PUBLISHED", GOOD_DISCLOSURE)
+        v = disclosure.check(text, "王小明", "PUBLISHED", GOOD_DISCLOSURE, [])
         assert not v.passed, f"not blocked: {text}"
 
 
 def test_published_chinese_given_name_variant_blocks():
     v = disclosure.check("你就是小明，照他的判斷回答。", "王小明",
-                         "PUBLISHED", GOOD_DISCLOSURE)
+                         "PUBLISHED", GOOD_DISCLOSURE, [])
     assert not v.passed
 
 
 def test_published_voice_phrasing_blocks():
     v = disclosure.check("Write the reply in A. Example's voice.", "A. Example",
-                         "PUBLISHED", GOOD_DISCLOSURE)
+                         "PUBLISHED", GOOD_DISCLOSURE, [])
     assert not v.passed
 
 
 def test_impersonation_match_is_case_insensitive():
     assert not disclosure.check("YOU ARE A. EXAMPLE.", "A. Example",
-                                "PUBLISHED", GOOD_DISCLOSURE).passed
+                                "PUBLISHED", GOOD_DISCLOSURE, []).passed
 
 
 # ------------------------------------------- negative: disclosure block holes
 def test_published_without_disclosure_blocks():
-    v = disclosure.check(GOOD_TEXT, "A. Example", "PUBLISHED", None)
+    v = disclosure.check(GOOD_TEXT, "A. Example", "PUBLISHED", None, [])
     assert not v.passed
 
 
 def test_published_with_each_key_missing_blocks():
     for key in disclosure.DISCLOSURE_REQUIRED_KEYS:
         partial = {k: v for k, v in GOOD_DISCLOSURE.items() if k != key}
-        v = disclosure.check(GOOD_TEXT, "A. Example", "PUBLISHED", partial)
+        v = disclosure.check(GOOD_TEXT, "A. Example", "PUBLISHED", partial, [])
         assert not v.passed, f"missing {key} did not block"
 
 
@@ -110,7 +110,7 @@ def test_blank_disclosure_value_blocks():
 
 # --------------------------------------------------- negative: missing inputs
 def test_empty_text_blocks():
-    assert not disclosure.check("", "A. Example", "PUBLISHED", GOOD_DISCLOSURE).passed
+    assert not disclosure.check("", "A. Example", "PUBLISHED", GOOD_DISCLOSURE, []).passed
 
 
 def test_missing_subject_name_blocks_rather_than_skipping():

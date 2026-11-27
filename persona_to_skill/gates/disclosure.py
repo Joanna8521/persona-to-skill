@@ -49,12 +49,36 @@ def _name_variants(name: str) -> List[str]:
     return [re.escape(v) for v in sorted(out, key=len, reverse=True) if v]
 
 
+def _labelled(skill_text: str, claim: str) -> bool:
+    """Is this claim labelled as an inference where it appears?
+
+    The renderer writes `{claim} *(inference from s9)*`. Whitespace is
+    collapsed on both sides so a line break inside the claim does not read as
+    a missing label.
+    """
+    flat = " ".join(skill_text.split())
+    return " ".join(f"{claim} *(inference from".split()) in flat
+
+
 def check(skill_text: str, subject_name: str, scope: str,
-          disclosure: Dict[str, Any] | None = None) -> Verdict:
+          disclosure: Dict[str, Any] | None = None,
+          inference_claims: List[Dict[str, Any]] | None = None) -> Verdict:
     """Check the artifact being delivered.
 
     `skill_text` is the generated skill, read from the file about to ship.
     `scope` is one of contract.OUTPUT_SCOPES.
+
+    `inference_claims` are the bundle's claims carrying
+    `attribution: "inference"`. G2 exempts those from the quote check on the
+    condition that the output labels them, and this is where that condition
+    is enforced. Pass an empty list when there are none; `None` means the
+    caller did not supply them, and under PUBLISHED scope that blocks rather
+    than passing, because a gate cannot verify what it was not given.
+
+    Until this existed the check was `if "inference" in skill_text.lower()`,
+    emitting a warning. It said nothing when the word was absent, which is
+    exactly the unlabelled case, while `anchor.py` and G2's own warning both
+    told the reader that G3 verified these labels.
     """
     errors: List[str] = []
     warnings: List[str] = []
@@ -105,8 +129,26 @@ def check(skill_text: str, subject_name: str, scope: str,
                 val = disclosure.get(key)
                 if val is None or (isinstance(val, str) and not val.strip()):
                     errors.append(f"disclosure block missing required key {key!r}")
-        if "inference" in skill_text.lower() or "推論" in skill_text:
-            warnings.append("output contains inference labels; confirm each is attached to a claim")
+        if inference_claims is None:
+            errors.append(
+                "G3 was not given the bundle's inference claims, so it cannot "
+                "verify that the output labels them. G2 exempts those claims "
+                "from the quote check on exactly that condition.")
+        else:
+            unlabelled = [str(c.get("claim") or c.get("text") or "")
+                          for c in inference_claims
+                          if not _labelled(skill_text,
+                                           str(c.get("claim") or c.get("text") or ""))]
+            if unlabelled:
+                listing = "".join(f"\n    {c}" for c in unlabelled)
+                errors.append(
+                    f"{len(unlabelled)} claim(s) marked as inference are not "
+                    "labelled as such in the output. G2 let them past the "
+                    "quote check because this gate would catch that:" + listing)
+            elif inference_claims:
+                warnings.append(
+                    f"{len(inference_claims)} claim(s) marked as inference, "
+                    "each labelled in the output and verified here")
 
     return Verdict(
         GATE, not errors, errors, warnings,
