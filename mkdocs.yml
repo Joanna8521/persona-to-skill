@@ -48,6 +48,9 @@ theme:
         icon: material/brightness-4
         name: Light mode
 
+hooks:
+  - tools/mkdocs_hooks.py
+
 plugins:
   - search
   # Folder structure, because docs/zh-TW/ and docs/ja/ already existed for the

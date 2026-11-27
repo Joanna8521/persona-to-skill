@@ -13,8 +13,10 @@ the page is wrong in the one direction that matters: it still looks
 authoritative.
 """
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 import _base  # noqa: F401
@@ -191,3 +193,36 @@ def test_published_comments_obey_the_prose_rules():
 if __name__ == "__main__":
     import sys as _sys
     _sys.exit(_base.run_module(dict(globals())))
+
+
+def test_every_built_page_has_a_sitemap_beside_it():
+    """Material fetches `sitemap.xml` relative to every `<link rel=alternate>`,
+    and the i18n plugin points those at the same page in each locale. On
+    `/journey/` that is three requests, for `journey/sitemap.xml` and the two
+    translated ones, none of which the plugin writes. Material swallows the
+    error, so the only symptom was a console full of 404s on every page view.
+
+    This builds the site and checks the artefact rather than the hook, because
+    the first version of the hook copied the sitemap into the three locale
+    ROOTS. That silenced the home page and left every sub-page broken, and a
+    test of the hook's intent would have passed.
+    """
+    mkdocs = shutil.which("mkdocs")
+    if mkdocs is None:
+        import pytest  # noqa: PLC0415
+        pytest.skip("mkdocs is not installed")
+
+    with tempfile.TemporaryDirectory() as tmp:
+        built = Path(tmp) / "site"
+        result = subprocess.run(
+            [sys.executable, "-m", "mkdocs", "build", "-d", str(built)],
+            cwd=ROOT, capture_output=True, text=True, check=False)
+        assert result.returncode == 0, result.stdout + result.stderr
+
+        pages = sorted(built.rglob("index.html"))
+        assert pages, "the build produced no pages"
+        missing = [str(p.parent.relative_to(built))
+                   for p in pages if not (p.parent / "sitemap.xml").exists()]
+        assert not missing, (
+            f"{len(missing)} of {len(pages)} built pages have no sitemap "
+            f"beside them, so Material will 404 on each page view: {missing}")
