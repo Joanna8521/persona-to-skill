@@ -1,0 +1,448 @@
+# -*- coding: utf-8 -*-
+"""Nothing may look verified without being verified.
+
+Two of these got through, both found by auditing rather than by reading:
+
+  * PUNCT_CHECKED_SUFFIXES and PUNCT_CHECKED_DIRS sat in the frozen contract
+    from the first commit, asserted by a test for their shape, and read by no
+    code at all. There was no validator. On its first real run the gate they
+    described found 16 violations in four files;
+  * the FROZEN tuple, which claims to enumerate the frozen contract values, was
+    missing nine of them.
+
+Both are the same failure: something that reads as a guarantee while nothing
+holds it up, made worse by a passing test about its shape. This file is the
+audit kept as a gate, because the class comes back otherwise.
+"""
+import ast
+import re
+from pathlib import Path
+
+import _base  # noqa: F401
+from persona_to_skill import contract
+
+ROOT = Path(__file__).resolve().parent.parent
+PKG = sorted((ROOT / "persona_to_skill").rglob("*.py"))
+TESTS = sorted((ROOT / "tests").glob("*.py"))
+
+
+def _contract_names():
+    src = (ROOT / "persona_to_skill" / "contract.py").read_text(encoding="utf-8")
+    return [t.id for n in ast.parse(src).body if isinstance(n, ast.Assign)
+            for t in n.targets
+            if isinstance(t, ast.Name) and t.id.isupper()
+            and t.id not in ("FROZEN", "PROVISIONAL", "DECLARED",
+                             "CONTRACT_VERSION")]
+
+
+def _refs(name, paths, skip="contract.py"):
+    return sum(len(re.findall(rf"\b{name}\b", p.read_text(encoding="utf-8")))
+               for p in paths if p.name != skip)
+
+
+def _tiers():
+    return (("FROZEN", contract.FROZEN), ("PROVISIONAL", contract.PROVISIONAL),
+            ("DECLARED", contract.DECLARED))
+
+
+def test_every_contract_value_is_classified():
+    """Three tiers, and a value belongs to exactly one.
+
+    FROZEN was measured or argued and changing it needs a version bump.
+    PROVISIONAL is read by code and the number is still a guess, so it carries
+    what would settle it and changing it needs nothing. DECLARED is prose that
+    no code reads. An unclassified value is one nobody has decided about, which
+    is how four guessed thresholds came to sit in FROZEN borrowing an authority
+    they had not earned."""
+    unclassified = [n for n in _contract_names()
+                    if not any(n in group for _, group in _tiers())]
+    assert not unclassified, f"unclassified contract values: {unclassified}"
+
+
+def test_no_contract_value_is_in_two_tiers():
+    names = _contract_names()
+    for n in names:
+        where = [label for label, group in _tiers() if n in group]
+        assert len(where) <= 1, f"{n} is in {where}; the tiers mean different things"
+
+
+def test_every_provisional_value_says_what_would_settle_it():
+    """A guess is allowed. A guess with no route out of being a guess is how it
+    quietly becomes permanent."""
+    for name, how in contract.PROVISIONAL.items():
+        assert how and len(how) > 20, f"{name} has no account of what would settle it"
+
+
+def test_provisional_values_are_read_by_production_code():
+    """Same rule as FROZEN: a value nothing consults is furniture whatever tier
+    it sits in."""
+    unwired = [n for n in contract.PROVISIONAL if _refs(n, PKG) == 0]
+    assert not unwired, f"provisional value(s) read by no production code: {unwired}"
+
+
+def _defined_anywhere():
+    """Every upper-case module-level name in the package.
+
+    PROVISIONAL covers guesses wherever they live. Restricting the registry to
+    contract.py was half the idea: the guesses had simply scattered into the
+    modules that used them, which is harder to notice rather than better.
+    """
+    out = set()
+    for path in PKG:
+        for node in ast.parse(path.read_text(encoding="utf-8")).body:
+            if isinstance(node, ast.Assign):
+                out.update(t.id for t in node.targets
+                           if isinstance(t, ast.Name) and t.id.isupper())
+    return out
+
+
+def test_no_tier_names_a_value_that_does_not_exist():
+    defined = _defined_anywhere()
+    for label, group in _tiers():
+        ghosts = [n for n in group if n not in defined]
+        assert not ghosts, f"{label} names values that do not exist: {ghosts}"
+
+
+def test_no_guessed_number_hides_outside_the_registry():
+    """A bare numeric constant in a module is either measured, structural, or a
+    guess. The guesses have to be registered; the others say what they are
+    where they are defined."""
+    exempt = {
+        # measured: see the module docstrings for the figures behind them
+        "MIN_SENTENCE_DENSITY", "MIN_SENTENCE_CASING",
+        # structural, not a judgement call
+        "HOLDOUT_MIN_ALIGNMENT", "HOLDOUT_MAX_UNKNOWN_RATIO",
+        "CONTRADICTION_MAX_UNRESOLVED_RATIO",
+        "CONTRADICTION_UNRESOLVED_RATIO_FLOOR",
+        "CONFIDENCE_REQUIRING_NO_GAPS", "CONFIDENCE_REQUIRING_GAPS_NAMED",
+        "HOLDOUT_MIN_ITEMS", "HOLDOUT_MIN_DIVERGENT_ITEMS",
+    }
+    unregistered = []
+    for path in PKG:
+        src = path.read_text(encoding="utf-8")
+        for node in ast.parse(src).body:
+            if not isinstance(node, ast.Assign):
+                continue
+            for t in node.targets:
+                if not (isinstance(t, ast.Name) and t.id.isupper()):
+                    continue
+                if not re.match(r"^(MIN|MAX|DEFAULT|SHORT|LIMIT)_", t.id):
+                    continue
+                if t.id in exempt or t.id in contract.PROVISIONAL:
+                    continue
+                unregistered.append(f"{path.name}:{t.id}")
+    assert not unregistered, (
+        "numeric threshold(s) neither measured nor registered as a guess: "
+        f"{unregistered}. Put it in contract.PROVISIONAL with what would "
+        "settle it, or say where the measurement came from.")
+
+
+def test_every_frozen_value_is_read_by_production_code():
+    """THE check that was missing. A frozen value only tests read is furniture:
+    it implies a gate that is not running, and the test about its shape makes
+    it look verified."""
+    unwired = []
+    for name in contract.FROZEN:
+        if _refs(name, PKG) == 0:
+            unwired.append((name, _refs(name, TESTS)))
+    assert not unwired, (
+        "frozen contract value(s) read by no production code "
+        f"(name, test references): {unwired}. Either wire it into a gate, or "
+        "move it to DECLARED and say it is prose.")
+
+
+def test_declared_prose_is_not_read_for_a_decision():
+    """The reverse: if code starts branching on one of these, it is no longer
+    prose and belongs in FROZEN with a gate behind it."""
+    for name in contract.DECLARED:
+        hits = _refs(name, PKG)
+        assert hits == 0, (
+            f"{name} is declared as prose but production code reads it "
+            f"({hits} references). Move it to FROZEN and give it a gate.")
+
+
+def test_every_gate_module_is_covered_by_the_teeth_test():
+    teeth = (ROOT / "tests" / "test_gates_have_teeth.py").read_text(encoding="utf-8")
+    for p in PKG:
+        m = re.search(r'^GATE = "([^"]+)"', p.read_text(encoding="utf-8"), re.M)
+        if m:
+            assert f'"{m.group(1)}"' in teeth, f"{m.group(1)} has no broken-input case"
+
+
+def test_no_ci_step_swallows_its_own_failure():
+    """A step that cannot fail is the CI version of the same problem."""
+    for wf in sorted((ROOT / ".github" / "workflows").glob("*.yml")):
+        text = wf.read_text(encoding="utf-8")
+        assert "continue-on-error" not in text, f"{wf.name} has continue-on-error"
+        for m in re.finditer(r"- name: (.+)", text):
+            tail = text[m.end():m.end() + 400]
+            nxt = tail.find("- name:")
+            body = tail[:nxt if nxt != -1 else len(tail)]
+            assert "|| true" not in body, f"{wf.name}: step {m.group(1)!r} swallows failure"
+
+
+def test_every_source_file_is_tracked_by_git():
+    """Source that exists locally and is not in the repository is the same
+    family: something looks complete and is not.
+
+    It happened. `.gitignore` carried an unanchored `build/`, which also
+    matched `persona_to_skill/build/`, so `git add -A` skipped a whole
+    subpackage in silence. The commit described work it did not contain, every
+    test passed locally, and CI on four platforms was the only thing that
+    noticed, several minutes later. The subpackage is now called `deliver` and
+    the pattern is anchored, but the class needs a guard rather than a memory.
+    """
+    import subprocess
+
+    tracked = set(subprocess.run(
+        ["git", "ls-files", "persona_to_skill", "tests", "experiments"],
+        cwd=ROOT, capture_output=True, text=True, check=True).stdout.split())
+    on_disk = {
+        p.relative_to(ROOT).as_posix()
+        for d in ("persona_to_skill", "tests", "experiments")
+        for p in (ROOT / d).rglob("*.py")
+        if "__pycache__" not in p.parts
+    }
+    untracked = sorted(on_disk - tracked)
+    assert not untracked, (
+        "Python source present on disk and not in the repository:\n  "
+        + "\n  ".join(untracked)
+        + "\nCheck .gitignore for an unanchored pattern; `git add -A` skips these "
+          "without saying so.")
+
+
+def test_gitignore_patterns_that_should_be_anchored_are():
+    """`build/` matches at every level, not only the root. The same is true of
+    `dist/`, and of anything else named after a conventional output directory
+    that could also be a legitimate package name."""
+    lines = [ln.strip() for ln in (ROOT / ".gitignore").read_text(encoding="utf-8").splitlines()]
+    for pattern in ("build/", "dist/", "docs/", "lib/", "src/", "test/"):
+        assert pattern not in lines, (
+            f"{pattern!r} in .gitignore is unanchored, so it also matches "
+            f"persona_to_skill/{pattern}. Write /{pattern} to mean the root only.")
+
+
+def test_no_except_clause_swallows_silently():
+    """`except ...: pass` with nothing said is the same family as an unwired
+    contract value: something is being discarded and the reader cannot tell
+    whether that was the intent.
+
+    Swallowing is sometimes right. force_utf8 does it on purpose, because a
+    stream that cannot be reconfigured is not a reason to end a run. The rule
+    is that the reason has to be written at the except, where someone changing
+    it will see it, not only in a docstring they may not read.
+    """
+    import io
+    import tokenize
+
+    bad = []
+    for path in PKG + TESTS:
+        src = path.read_text(encoding="utf-8")
+        lines = src.splitlines()
+        comment_lines = set()
+        for tok in tokenize.generate_tokens(io.StringIO(src).readline):
+            if tok.type == tokenize.COMMENT:
+                comment_lines.add(tok.start[0])
+        for node in ast.walk(ast.parse(src)):
+            if not isinstance(node, ast.ExceptHandler):
+                continue
+            body = node.body
+            if not (len(body) == 1 and isinstance(body[0], ast.Pass)):
+                continue
+            span = range(node.lineno, (body[0].lineno) + 1)
+            if not any(ln in comment_lines for ln in span):
+                bad.append(f"{path.name}:{node.lineno}: {lines[node.lineno - 1].strip()}")
+    assert not bad, ("except clause(s) that pass with no comment saying why:\n  "
+                     + "\n  ".join(bad))
+
+
+def test_the_punctuation_gate_actually_exists_now():
+    """Named explicitly because its absence is what prompted this file."""
+    from persona_to_skill import validate_punct
+    assert callable(validate_punct.check_file)
+    assert callable(validate_punct.in_fullwidth_scope)
+    ci = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    assert "validate_punct" in ci, "the gate exists but CI does not run it"
+
+
+
+def test_no_multiline_strings_inside_a_list_literal():
+    """A wrapped string and a missing comma look identical.
+
+    CodeQL raised six of these on eval/report.py, where paragraphs of prose
+    were written as multi-line implicit concatenations inside the `lines`
+    list. It was right, and the hazard is the silent kind: a stray comma turns
+    one entry into two, a missing one merges two into one, and neither raises
+    anything. The output just comes out subtly different.
+
+    It is not only multi-element containers. A single-element
+    `return [\"...\" \"...\"]` with a comma slipped in becomes two error lines
+    where there was one, which is the same silent change.
+
+    `fetch.py`'s IMPORT_ROUTES was the clearest case: a comma lost between two
+    of its three routes would have made three into two, and a refused fetch
+    would have offered the reader one fewer way forward.
+
+    The fix throughout was to name the string above the literal, which also
+    made the prose easier to find than it was buried in a list.
+    """
+    offenders = []
+    for f in PKG + TESTS:
+        tree = ast.parse(f.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if not isinstance(node, (ast.List, ast.Tuple, ast.Set)):
+                continue
+            for el in node.elts:
+                if not isinstance(el, (ast.Constant, ast.JoinedStr)):
+                    continue
+                if isinstance(el, ast.Constant) and not isinstance(el.value, str):
+                    continue
+                if (el.end_lineno or el.lineno) > el.lineno:
+                    offenders.append(f"{f.relative_to(ROOT)}:{el.lineno}")
+
+    assert not offenders, (
+        "strings spanning more than one line inside a list, tuple or set "
+        f"literal: {offenders}. A wrapped string and a missing comma look the "
+        "same there. Name the string above the literal and reference it, or "
+        "build it in a small function."
+    )
+
+
+def test_no_absolute_paths_outside_the_repo():
+    """An absolute path is correct on the machine it was written on.
+
+    That is what makes the class invisible: it passes locally, every time, for
+    the author. It bit twice in one afternoon. A helper script shipped with
+    '/home/user/<project>/extension' hardcoded, which failed on CI's first run
+    with ENOENT on a path not in the repository. And a CI step used /tmp, which
+    works everywhere except Windows: Git Bash resolves /tmp to somewhere under
+    AppData while Python on Windows reads the same string as a path on the
+    current drive, so the shell wrote a copy where Python could not see it.
+    Ten platforms were green and one was not.
+
+    Relative paths are what both agree on, so absolute ones are refused here.
+    """
+    pattern = re.compile(
+        r"""['"](/(?:home|Users|tmp|var|opt|private|mnt)/[^'" \s]*)['"]"""
+    )
+    # Paths that really are that place on the system, rather than a stand-in
+    # for a file in this repository.
+    allowed = ("/tmp/pytest",)
+
+    def docstring_lines(src):
+        """Line numbers covered by a docstring.
+
+        A docstring is prose, like a comment, and the first version of this
+        check did not know that: it flagged the path quoted INSIDE THIS
+        FUNCTION'S OWN DOCSTRING, where it appears as the example of the bug.
+        Skipping only `#` lines was not enough, and skipping every string
+        literal would gut the check, so docstrings are found properly.
+        """
+        covered = set()
+        tree = ast.parse(src)
+        for node in ast.walk(tree):
+            if not isinstance(node, (ast.Module, ast.ClassDef,
+                                     ast.FunctionDef, ast.AsyncFunctionDef)):
+                continue
+            body = getattr(node, "body", None)
+            if not body:
+                continue
+            first = body[0]
+            if (isinstance(first, ast.Expr)
+                    and isinstance(first.value, ast.Constant)
+                    and isinstance(first.value.value, str)):
+                covered.update(range(first.lineno, (first.end_lineno or
+                                                    first.lineno) + 1))
+        return covered
+
+    hits = []
+    scanned = (
+        PKG
+        + TESTS
+        + sorted((ROOT / ".github").rglob("*.yml"))
+        + sorted((ROOT / "experiments").rglob("*.py"))
+        # tools/ is exactly where this class grows: a helper written on one
+        # machine, promoted from a scratch file, carrying that machine's paths.
+        + [f for f in sorted((ROOT / "tools").rglob("*.py"))
+           if "__pycache__" not in f.parts]
+    )
+    for f in scanned:
+        src = f.read_text(encoding="utf-8")
+        skip = docstring_lines(src) if f.suffix == ".py" else set()
+        for n, line in enumerate(src.split("\n"), 1):
+            if n in skip:
+                continue
+            stripped = line.lstrip()
+            if stripped.startswith("#") or stripped.startswith("//"):
+                continue
+            for m in pattern.finditer(line):
+                if m.group(1).startswith(allowed):
+                    continue
+                hits.append(f"{f.relative_to(ROOT)}:{n} {m.group(1)}")
+
+    # The workflows use bare /tmp paths in shell too, without quotes, and those
+    # are the ones that broke Windows. Catch them as well.
+    bare = re.compile(r"(?<![\w/.$\-])(/tmp/[\w./\-]+)")
+    for f in sorted((ROOT / ".github").rglob("*.yml")):
+        for n, line in enumerate(f.read_text(encoding="utf-8").split("\n"), 1):
+            if line.lstrip().startswith("#"):
+                continue
+            for m in bare.finditer(line):
+                hits.append(f"{f.relative_to(ROOT)}:{n} {m.group(1)}")
+
+    assert not hits, (
+        "absolute paths, which are correct only on the machine they were "
+        f"written on: {hits}. Use a path relative to the repository, or to "
+        "the script's own location."
+    )
+
+
+def test_every_test_file_runs_as_a_script():
+    """`_base.run_module` exists so that a test file runs without pytest.
+
+    It only works if the file ends with the block that calls it, and a file
+    missing that block is silently pytest-only: pytest collects it, everything
+    is green, and `python3 tests/that_file.py` prints nothing and exits 0.
+
+    Both files added with the CLI were missing it. The check that was supposed
+    to catch it searched the file's text for "run_module", and a COMMENT
+    mentioning run_module satisfied that search. A guard that its own prose can
+    satisfy is not a guard, so this one looks for the call itself.
+    """
+    missing = []
+    for f in TESTS:
+        if f.name == "_base.py":
+            continue
+        src = f.read_text(encoding="utf-8")
+        tree = ast.parse(src)
+        # The call has to be in executable code, not in a string or a comment.
+        called = any(
+            isinstance(n, ast.Attribute) and n.attr == "run_module"
+            for n in ast.walk(tree)
+        )
+        guarded = '__name__ == "__main__"' in src or "__name__ == '__main__'" in src
+        if not (called and guarded):
+            missing.append(f.name)
+    assert not missing, (
+        f"these test files cannot run as scripts: {missing}. Each needs the "
+        f'`if __name__ == "__main__": sys.exit(_base.run_module(dict(globals())))` '
+        f"block that every other one has."
+    )
+
+
+def test_every_test_file_has_at_least_one_test():
+    """A test file with no test_* function passes forever, guarding nothing."""
+    empty = []
+    for f in TESTS:
+        if f.name == "_base.py":
+            continue
+        tree = ast.parse(f.read_text(encoding="utf-8"))
+        if not any(isinstance(n, ast.FunctionDef) and n.name.startswith("test_")
+                   for n in tree.body):
+            empty.append(f.name)
+    assert not empty, f"test files with no tests in them: {empty}"
+
+
+if __name__ == "__main__":
+    import sys
+    sys.exit(_base.run_module(dict(globals())))

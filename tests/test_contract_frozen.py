@@ -25,6 +25,7 @@ def test_holdout_thresholds_frozen():
     assert c.HOLDOUT_MIN_ALIGNMENT == 0.80
     assert c.HOLDOUT_MAX_UNKNOWN_RATIO == 0.30
     assert c.HOLDOUT_MIN_ITEMS == 10
+    assert c.HOLDOUT_MIN_DIVERGENT_ITEMS == 5
 
 
 def test_consent_fields_frozen():
@@ -60,6 +61,55 @@ def test_private_impersonation_rationale_is_about_effectiveness():
     r = c.IMPERSONATION_RATIONALE_PRIVATE.lower()
     assert "voice" in r and "judgement" in r
     assert "illegal" not in r and "law" not in r
+
+
+def test_memo_schema_frozen():
+    assert tuple(c.MEMO_REQUIRED_FIELDS) == (
+        "decision", "options", "known_facts", "consensus", "conflicts",
+        "key_assumptions", "main_risks", "evidence_gaps", "flip_condition",
+        "recommendation", "confidence", "next_actions",
+    )
+    assert c.MEMO_LOAD_BEARING_FIELDS == ("flip_condition", "confidence")
+    assert c.MEMO_EMPTIABLE_FIELDS == ("evidence_gaps",)
+    assert c.VERDICTS == ("APPROVE", "REVISE", "INVESTIGATE", "DEFER")
+    assert c.VERDICTS_REQUIRING_FLIP_CONDITION_KNOWN == ("APPROVE", "REVISE")
+    assert c.CONFIDENCE_REQUIRING_NO_GAPS == 0.70
+    assert c.CONFIDENCE_REQUIRING_GAPS_NAMED == 0.70
+    assert c.GAP_PERIPHERAL_KEY == "bears_on_decision"
+
+
+def test_conflicts_cannot_be_emptied():
+    """A run that surfaces no conflict has not found agreement, it has found
+    that a seat did not hold its position. Conflict is also where the value is:
+    it marks where two models of the world differ."""
+    assert "conflicts" not in c.MEMO_EMPTIABLE_FIELDS
+    assert "conflicts" in c.MEMO_REQUIRED_FIELDS
+
+
+def test_threshold_structural_check_exists():
+    """The lexical lists are a floor. This is the check that actually holds: a
+    threshold with no number in it is not a threshold."""
+    assert c.THRESHOLD_NUMBER.search("JPY 1,200")
+    assert not c.THRESHOLD_NUMBER.search("acceptably low")
+    assert not c.THRESHOLD_NUMBER.search("低到可以接受")
+
+
+def test_statement_classes_frozen():
+    """The four-way split is what makes the traps in fluent prose visible, plus
+    UNKNOWN so "I do not know" has somewhere to go."""
+    assert c.STATEMENT_CLASSES == (
+        "FACT", "INFERENCE", "ASSUMPTION", "RECOMMENDATION", "UNKNOWN")
+    assert c.ASSUMPTION_STATUSES == ("verified", "unverified", "unverifiable")
+
+
+def test_evasion_and_hedging_are_separate_lists():
+    """Different faults: evasion dodges a judgement, hedging fakes knowing a
+    fact. Collapsing them would lose the second."""
+    assert not set(c.EVASION_PHRASES) & set(c.HEDGE_MARKERS)
+    for phrase in ("綜合評估", "視情況而定"):
+        assert phrase in c.EVASION_PHRASES
+    for marker in ("應該是", "通常會", "probably", "should be"):
+        assert marker in c.HEDGE_MARKERS
 
 
 def test_voice_and_likeness_declared_out_of_scope():

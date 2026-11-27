@@ -1,0 +1,202 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    name: tests (py${{ matrix.python }} on ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        python: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        include:
+          # The gates compare quoted text against files on disk, so path and
+          # encoding behaviour is load-bearing. Both other platforms get a run.
+          - os: macos-latest
+            python: "3.13"
+          - os: windows-latest
+            python: "3.13"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: python -m pip install --upgrade pip && python -m pip install -e ".[dev]"
+      - name: pytest
+        run: python -m pytest -q
+
+      # Every test file must also run as a plain script, so a contributor with
+      # no pytest installed can still check a gate. A file that only works
+      # under pytest silently loses that, so it is verified here.
+      - name: each test file as a standalone script
+        shell: bash
+        run: |
+          status=0
+          for f in tests/test_*.py; do
+            echo "--- $f"
+            python "$f" || status=1
+          done
+          exit $status
+
+      # The installed console script, actually invoked.
+      #
+      # pyproject.toml declared `persona-to-skill = "persona_to_skill.cli:main"`
+      # for eleven commits while persona_to_skill/cli.py did not exist. The
+      # install above succeeded, 321 tests were green, and the command died
+      # with ModuleNotFoundError on its first run. Nothing here ran it.
+      #
+      # tests/test_entry_points.py now resolves the declared target, which
+      # catches an absent module. This step catches the rest: a console script
+      # that the packaging metadata generates wrong, an import that only fails
+      # outside the repo root, and an exit code that does not come back.
+      - name: the installed command, invoked
+        shell: bash
+        run: |
+          set -e
+          cd "$(mktemp -d)"   # outside the repo: no sys.path luck
+          persona-to-skill --help > /dev/null
+          persona-to-skill fetch https://example.com/a > /dev/null
+          echo '{}' > bundle.json
+          mkdir corpus
+          # An empty bundle must FAIL. A gate that exits 0 on nothing cannot be
+          # put in a CI job, which is the same as not having one.
+          if persona-to-skill gates bundle.json --corpus corpus > /dev/null; then
+            echo "::error::gates exited 0 on an empty bundle"
+            exit 1
+          fi
+
+      # The worked example in examples/eval, actually run.
+      #
+      # examples/eval/README.md states what each of nine deliberate breaks
+      # does. Those were verified by hand once; this keeps them verified,
+      # because a documented behaviour nobody runs is the same shape as a gate
+      # nobody runs.
+      - name: the worked eval example
+        shell: bash
+        run: |
+          set -u
+          fail=0
+          E=examples/eval
+
+          # Every path here is RELATIVE, and that is the whole reason this
+          # block looks the way it does.
+          #
+          # The first version used /tmp. On Windows that fails in a way no
+          # other platform shows: Git Bash resolves /tmp to somewhere under
+          # AppData, while Python on Windows reads the same string as
+          # \tmp\... on the current drive. So the shell copied the example to
+          # one place and Python looked in another, and every break reported
+          # "could not apply" while the step still printed that the committed
+          # example passed. Ten platforms were green and one was not.
+          WORK=.eval-break
+          trap 'rm -rf "$WORK" eval-out.txt break-out.txt' EXIT
+
+          run_eval () {
+            python3 -m persona_to_skill.cli eval "$E/manifest.json" \
+              --run "$E/run.json" --corpus "$E/corpus" > eval-out.txt 2>&1
+          }
+
+          if ! run_eval; then
+            echo "::error::the example as committed does not pass"
+            cat eval-out.txt
+            exit 1
+          fi
+          grep -q "Divergent-pool alignment: 90%" eval-out.txt || {
+            echo "::error::the example no longer scores the 90% its README states"
+            grep "Divergent-pool" eval-out.txt
+            fail=1
+          }
+          echo "  the committed example passes at 90%"
+
+          # Each break must turn it red, and must say the thing the README says
+          # it says. A red run for some other reason would still satisfy a
+          # check that only looked at the exit code, which is how the first
+          # version of this step passed on Windows while applying no break at
+          # all.
+          break_it () {
+            local what="$1" code="$2" expect="$3"
+            rm -rf "$WORK" && cp -r "$E" "$WORK"
+            if ! python3 -c "$code"; then
+              echo "::error::could not apply the break: $what"
+              fail=1
+              return
+            fi
+            if python3 -m persona_to_skill.cli eval "$WORK/manifest.json" \
+                 --run "$WORK/run.json" --corpus "$WORK/corpus" \
+                 > break-out.txt 2>&1; then
+              echo "::error::STAYED GREEN: $what"
+              fail=1
+            elif ! grep -q "$expect" break-out.txt; then
+              echo "::error::red for the wrong reason: $what (expected '$expect')"
+              sed 's/^/    /' break-out.txt | tail -6
+              fail=1
+            else
+              echo "  red as the README says: $what"
+            fi
+          }
+
+          R='import json,pathlib;p=pathlib.Path(".eval-break/run.json");d=json.loads(p.read_text(encoding="utf-8"))'
+          M='import json,pathlib;p=pathlib.Path(".eval-break/manifest.json");d=json.loads(p.read_text(encoding="utf-8"))'
+          W='p.write_text(json.dumps(d,ensure_ascii=False),encoding="utf-8")'
+
+          break_it "a ground truth that is not in its source" \
+            "$M;d['items'][0]['subject_said']='Something the source never says.';$W" \
+            "does not appear verbatim"
+          break_it "every judgement non-blind" \
+            "$R;[i.update(blind=False) for i in d['items']];$W" \
+            "alignment: not measured"
+          break_it "no judge named" \
+            "$R;[i.update(judged_by='') for i in d['items']];$W" \
+            "alignment: not measured"
+          break_it "an observation recorded as a string" \
+            "$R;d['items'][0]['aligned']='yes';$W" \
+            "must be true, false, or null"
+          break_it "an observation recorded as 1" \
+            "$R;d['items'][0]['aligned']=1;$W" \
+            "must be true, false, or null"
+          break_it "everything flagged seen during extraction" \
+            "$M;[i.update(seen_in_extraction=True) for i in d['items']];$W" \
+            "alignment: not measured"
+          break_it "an answer to a question the manifest does not ask" \
+            "$R;d['items'].append(dict(d['items'][0], id='q99'));$W" \
+            "the manifest does not ask"
+
+          echo
+          if [ "$fail" -ne 0 ]; then
+            echo "the example no longer behaves the way its README says it does."
+            exit 1
+          fi
+          echo "the example behaves exactly as documented."
+
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: python -m pip install ruff==0.6.9
+      - run: python -m ruff check persona_to_skill tests tools
+      - name: punctuation gate on the documentation
+        run: python -m persona_to_skill.validate_punct
+
+      - name: no non-ASCII in any path
+        run: |
+          if LC_ALL=C git ls-files | LC_ALL=C grep -nP '[^\x00-\x7F]'; then
+            echo "::error::non-ASCII path; some skill uploaders reject the whole archive"
+            exit 1
+          fi

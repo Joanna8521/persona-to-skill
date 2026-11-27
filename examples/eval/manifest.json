@@ -1,0 +1,102 @@
+{
+  "items": [
+    {
+      "id": "q1",
+      "question": "Question 1 put to the subject?",
+      "source_id": "src1",
+      "subject_said": "A price is a claim about what the buyer is comparing you against.",
+      "seat": "evidence"
+    },
+    {
+      "id": "q2",
+      "question": "Question 2 put to the subject?",
+      "source_id": "src2",
+      "subject_said": "Discounting to close a deal teaches the buyer to wait next time.",
+      "seat": "evidence"
+    },
+    {
+      "id": "q3",
+      "question": "Question 3 put to the subject?",
+      "source_id": "src3",
+      "subject_said": "The cheapest hire is the one who needs the least supervision.",
+      "seat": "evidence"
+    },
+    {
+      "id": "q4",
+      "question": "Question 4 put to the subject?",
+      "source_id": "src4",
+      "subject_said": "A deadline nobody set is a deadline nobody owns.",
+      "seat": "evidence"
+    },
+    {
+      "id": "q5",
+      "question": "Question 5 put to the subject?",
+      "source_id": "src5",
+      "subject_said": "Most meetings are a vote held without anyone saying so.",
+      "seat": "evidence"
+    },
+    {
+      "id": "q6",
+      "question": "Question 6 put to the subject?",
+      "source_id": "src6",
+      "subject_said": "A roadmap is a prediction, and predictions are priced.",
+      "seat": "evidence"
+    },
+    {
+      "id": "q7",
+      "question": "Question 7 put to the subject?",
+      "source_id": "src7",
+      "subject_said": "The first version should be the one you can throw away.",
+      "seat": "evidence"
+    },
+    {
+      "id": "q8",
+      "question": "Question 8 put to the subject?",
+      "source_id": "src8",
+      "subject_said": "A contract is the record of what you both feared.",
+      "seat": "evidence"
+    },
+    {
+      "id": "q9",
+      "question": "Question 9 put to the subject?",
+      "source_id": "src9",
+      "subject_said": "Paying for speed buys you a different set of problems.",
+      "seat": "evidence"
+    },
+    {
+      "id": "q10",
+      "question": "Question 10 put to the subject?",
+      "source_id": "src10",
+      "subject_said": "A reference check is worth more than a second interview.",
+      "seat": "evidence"
+    },
+    {
+      "id": "q11",
+      "question": "Question 11 put to the subject?",
+      "source_id": "src11",
+      "subject_said": "Working software is the only honest status report.",
+      "seat": "evidence"
+    },
+    {
+      "id": "q12",
+      "question": "Question 12 put to the subject?",
+      "source_id": "src12",
+      "subject_said": "Churn is a lagging indicator of a conversation nobody had.",
+      "seat": "evidence"
+    },
+    {
+      "id": "q13",
+      "question": "Question 13 put to the subject?",
+      "source_id": "src13",
+      "subject_said": "A budget is the only document that cannot be negotiated upward.",
+      "seat": "evidence"
+    },
+    {
+      "id": "q14",
+      "question": "Question 14 put to the subject?",
+      "source_id": "src14",
+      "subject_said": "Hiring ahead of revenue is a bet on a number you do not have.",
+      "seat": "evidence"
+    }
+  ]
+}

@@ -1,0 +1,118 @@
+# The documentation site.
+#
+#     pip install -r docs-requirements.txt
+#     python3 tools/build_docs.py && mkdocs serve
+#
+# docs/ holds generated pages. tools/build_docs.py writes them from the READMEs
+# and from the code, and `--check` fails when one is out of date, so a stale
+# page is a failing check rather than a quiet lie. Edit the source, not docs/.
+
+site_name: persona-to-skill
+site_description: >-
+  Turn a practitioner's documented method into an agent skill that cites its
+  sources and proves it transferred.
+site_url: https://joanna8521.github.io/persona-to-skill/
+repo_url: https://github.com/Joanna8521/persona-to-skill
+repo_name: Joanna8521/persona-to-skill
+edit_uri: ""   # the pages are generated; "edit this page" would point at the wrong file
+copyright: Apache-2.0. Section 6 grants no trademark rights.
+
+theme:
+  name: material
+  language: en
+  features:
+    - navigation.sections
+    - navigation.top
+    - navigation.tracking
+    - content.code.copy
+    - search.highlight
+    - toc.follow
+  palette:
+    # The site follows the reader's own setting first, and offers both.
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: Follow system
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Light mode
+
+plugins:
+  - search
+  # Folder structure, because docs/zh-TW/ and docs/ja/ already existed for the
+  # journey pages, and because the punctuation gate's PUNCT_CHECKED_DIRS reads
+  # exactly those paths. Switching to the suffix layout would have moved the
+  # files out from under a frozen contract value for no gain.
+  - i18n:
+      docs_structure: folder
+      fallback_to_default: true
+      languages:
+        - locale: en
+          name: English
+          default: true
+          build: true
+        - locale: zh-TW
+          name: 繁體中文
+          build: true
+          nav_translations:
+            Start here: 從這裡開始
+            Overview: 總覽
+            How it was built: 它是怎麼長出來的
+            Reference: 參考
+            The frozen contract: 凍結契約
+            The gates: 閘門
+            The command line: 命令列
+        - locale: ja
+          name: 日本語
+          build: true
+          nav_translations:
+            Start here: ここから
+            Overview: 概要
+            How it was built: どう作られたか
+            Reference: リファレンス
+            The frozen contract: 凍結された契約
+            The gates: ゲート
+            The command line: コマンドライン
+
+nav:
+  - Start here:
+      - Overview: index.md
+      - How it was built: journey.md
+  # Extracted from the code rather than written, so these three cannot be
+  # wrong about it. English only: their content is lifted from docstrings and
+  # comments, and hand-translating extracted text would give three versions
+  # drifting from the code at three different rates. The i18n plugin falls
+  # back to English for them, which is the honest outcome.
+  - Reference:
+      - The frozen contract: reference/contract.md
+      - The gates: reference/gates.md
+      - The command line: reference/cli.md
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+
+strict: true   # a broken link or a missing nav target fails the build

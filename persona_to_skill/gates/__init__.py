@@ -3,11 +3,11 @@
 
 Every gate here is built to three rules, taken from the house rules on gates
 with teeth:
-  1. recompute independently -- never confirm a value using the method that
+  1. recompute independently: never confirm a value using the method that
      produced it;
-  2. fail closed -- when the input a check depends on is absent, block, do not
+  2. fail closed: when the input a check depends on is absent, block, do not
      wave through;
-  3. check the artifact actually being delivered -- not a fixture, not the
+  3. check the artifact actually being delivered, not a fixture, not the
      previous run.
 """
 from dataclasses import dataclass, field

@@ -1,0 +1,5 @@
+# The documentation site. Pinned, because an unpinned docs build is a build
+# that breaks on a day nobody touched the docs.
+mkdocs==1.6.1
+mkdocs-material==9.8.2
+mkdocs-static-i18n==1.3.1

@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""G3 -- disclosure and impersonation.
+"""G3: disclosure and impersonation.
 
 The one gate that depends on output scope, because it is the only one about
 informing a third party. It reads the generated skill text about to be
-delivered -- not a template, not a fixture.
+delivered, not a template, not a fixture.
 
 PUBLISHED scope blocks on:
   * any instruction telling a model to be, act as, or speak as the subject;
@@ -16,7 +16,7 @@ impersonation is the text form nearest that line. In Taiwan the questions are
 混淆誤認之虞 (likelihood of confusion) and 攀附知名度 (riding on someone's
 reputation); a disclosure block and a non-impersonating voice address both.
 
-PRIVATE scope requires no disclosure -- nobody is being informed -- and
+PRIVATE scope requires no disclosure, since nobody is being informed, and
 downgrades impersonation to a warning about effectiveness rather than law. See
 contract.IMPERSONATION_RATIONALE_PRIVATE. A private builder who wants
 impersonation anyway gets it; the tool states why it is a worse tool and
@@ -60,8 +60,9 @@ def check(skill_text: str, subject_name: str, scope: str,
     warnings: List[str] = []
 
     if scope not in OUTPUT_SCOPES:
-        return Verdict(GATE, False, [f"unknown output scope {scope!r}; "
-                                     f"expected one of {list(OUTPUT_SCOPES)}"])
+        why = (f"unknown output scope {scope!r}; "
+               f"expected one of {list(OUTPUT_SCOPES)}")
+        return Verdict(GATE, False, [why])
     if not skill_text or not skill_text.strip():
         return Verdict(GATE, False, ["no skill text supplied; nothing to check"])
     if not subject_name or not subject_name.strip():

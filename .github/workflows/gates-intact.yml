@@ -1,0 +1,66 @@
+# A gate that cannot fail is worse than no gate: it grants false confidence.
+#
+# This workflow runs only the checks that prove the four gates still bite, and
+# it is separate from CI so the result is legible on its own. A fork may change
+# anything here, but one that guts a gate while keeping the project's name goes
+# red on its own pull requests, in public.
+name: Gates intact
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  teeth:
+    name: every gate rejects a broken input
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: each gate must reject a deliberately broken input
+        run: python tests/test_gates_have_teeth.py
+
+      - name: frozen contract values unchanged
+        run: python tests/test_contract_frozen.py
+
+      - name: every gate module is present and callable
+        run: |
+          python - <<'PY'
+          import sys
+          from persona_to_skill.gates import anchor, consent, disclosure, holdout
+          missing = [m.__name__ for m in (consent, anchor, disclosure, holdout)
+                     if not callable(getattr(m, "check", None))]
+          if missing:
+              sys.exit("gate module(s) with no check(): " + ", ".join(missing))
+          print("4 gates present")
+          PY
+
+      - name: no gate has lost its negative tests
+        run: |
+          python - <<'PY'
+          import pathlib, re, sys
+          FLOOR = 4
+          bad = []
+          for gate in ("consent", "anchor", "disclosure", "holdout", "interrogation"):
+              f = pathlib.Path(f"tests/test_gate_{gate}.py")
+              if not f.exists():
+                  bad.append((gate, "no test file"))
+                  continue
+              n = len(re.findall(r"assert not", f.read_text(encoding="utf-8")))
+              print(f"{gate}: {n} negative assertion(s)")
+              if n < FLOOR:
+                  bad.append((gate, f"{n} < {FLOOR}"))
+          if bad:
+              for gate, why in bad:
+                  print(f"::error file=tests/test_gate_{gate}.py::{why}; "
+                        "a gate without negative tests is unverified")
+              sys.exit(1)
+          PY
