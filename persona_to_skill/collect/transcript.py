@@ -309,18 +309,31 @@ def ingest(raw: str = "", cue_items: Optional[Sequence[Dict[str, Any]]] = None,
     reader can see that this prose was assembled rather than published.
     """
     from .provenance import measure
+    from .sanitize import clean
 
     cues = parse_cue_list(cue_items) if cue_items is not None else parse_vtt(raw)
     text = join_cues(cues, **{k: v for k, v in extra.items()
                               if k in ("paragraph_gap_ms", "drop_non_speech")})
+
+    # Sanitise here rather than at a gate. Clean stored text means the
+    # fingerprint covers the clean version and G2 never sees the attack; a gate
+    # would only report on something already loaded.
+    text, findings = clean(text)
+    notes = list(extra.get("notes") or [])
+    if not findings.clean:
+        notes.append(f"sanitised at ingest: {findings.to_dict()}")
+
     prov = measure(
         text, kind="transcript",
         cue_segmented=True,
         cues_joined=len(cues),
         declared_track_kind=extra.get("declared_track_kind"),
-        notes=list(extra.get("notes") or []),
+        notes=notes,
     )
-    return {"text": text, "provenance": prov.to_dict()}
+    out = {"text": text, "provenance": prov.to_dict()}
+    if not findings.clean:
+        out["sanitised"] = findings.to_dict()
+    return out
 
 
 # --------------------------------------------------------------- attribution

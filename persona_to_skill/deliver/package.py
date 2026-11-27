@@ -29,6 +29,7 @@ import zipfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+from ..collect import sanitize as sanitize_gate
 from ..extract import contradictions as contradictions_gate
 from ..extract import profile as profile_gate
 from ..extract import seats as seats_gate
@@ -78,6 +79,9 @@ def run_gates(bundle: Dict[str, Any], corpus_dir: Path,
     consent_path = bundle.get("consent_path")
 
     verdicts = [
+        # First, because everything after it reads the corpus. A file placed
+        # here by hand never went through ingest.
+        sanitize_gate.check(corpus_dir),
         consent_gate.check(bundle.get("sources") or [],
                            Path(consent_path) if consent_path else None),
         seats_gate.check(bundle),

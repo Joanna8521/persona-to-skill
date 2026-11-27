@@ -23,6 +23,7 @@ import _base  # noqa: F401
 from persona_to_skill import __path__ as PKG_PATH
 from persona_to_skill import contract
 from persona_to_skill.contract import SEAT_ENTRY_ORDER, SEATS
+from persona_to_skill.collect import sanitize
 from persona_to_skill.extract import contradictions, profile, seats, sensitivity
 from persona_to_skill.gates import anchor, consent, disclosure, holdout, interrogation
 
@@ -57,6 +58,13 @@ GATES = tuple(sorted(GATE_MODULES))
 def _corpus():
     d = Path(tempfile.mkdtemp())
     (d / "s1.txt").write_text("Nothing quotable lives here.", encoding="utf-8")
+    return d
+
+
+def _bidi_corpus():
+    d = Path(tempfile.mkdtemp())
+    (d / "s1.txt").write_text("I walk away \u202erather than discount\u202c.",
+                              encoding="utf-8")
     return d
 
 
@@ -204,6 +212,13 @@ BROKEN = [
                                             "baseline_aligned": True}] * 20})),
     ("B-profile", "no per-seat holdout supplied",
      lambda: profile.check(None)),
+
+    ("A-sanitize", "a corpus file carrying bidirectional overrides",
+     lambda: sanitize.check(_bidi_corpus())),
+    ("A-sanitize", "a corpus directory that is not there",
+     lambda: sanitize.check("/nonexistent-corpus-dir")),
+    ("A-sanitize", "an empty corpus directory",
+     lambda: sanitize.check(Path(tempfile.mkdtemp()))),
 ]
 
 
@@ -226,9 +241,9 @@ def test_every_gate_is_covered_by_this_file():
 
 
 def test_discovery_found_every_gate_module():
-    assert len(GATES) >= 9, f"discovered only {GATES}"
+    assert len(GATES) >= 10, f"discovered only {GATES}"
     for mod in (consent, anchor, disclosure, holdout, interrogation,
-                seats, contradictions, sensitivity, profile):
+                seats, contradictions, sensitivity, profile, sanitize):
         assert mod.GATE in GATE_MODULES
 
 
@@ -240,6 +255,7 @@ def test_every_gate_rejects_its_missing_input():
     assert not disclosure.check("", "A. Example", "PUBLISHED", {}).passed
     assert not holdout.check(None).passed
     assert not interrogation.check(None, None).passed
+    assert not sanitize.check("/nonexistent-corpus-dir").passed
     assert not seats.check(None).passed
     assert not contradictions.check(None).passed
     assert not sensitivity.check(None).passed
@@ -257,6 +273,7 @@ def test_a_clean_input_still_passes():
           "quote": "I walk away rather than discount", "attributed_to_source": True}],
         _book_corpus(),
         [{"id": "s1", "tier": "T2", "authorship": "ghostwritten"}]).passed
+    assert sanitize.check(_book_corpus()).passed
     assert anchor.check(
         [{"id": "c", "text": "Walks away.", "source_id": "s1",
           "quote": "I walk away rather than discount"}], d).passed
